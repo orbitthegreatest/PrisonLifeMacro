@@ -252,8 +252,17 @@ RemoveToolTip:
 return
 
 RecalculateX() {
-    global Spin, BaseDPI, BaseCS, DPI, CS, X
-    X := Round((Spin * BaseDPI * BaseCS) / (DPI * CS))
+    ; NOTE: DPI is intentionally NOT part of this formula. mouse_event/SendInput
+    ; movement is a synthetic pixel delta injected directly into the input
+    ; stack - it is not affected by the physical mouse's DPI setting (that
+    ; only matters for a real mouse converting physical motion into counts).
+    ; This mirrors RecalcRotationPixels(), which also only depends on
+    ; sensitivity. Previously this multiplied by (BaseDPI / DPI), which
+    ; silently over/under-scaled the jump whenever DPI != BaseDPI (e.g. at
+    ; 400 DPI it doubled the pixel amount), breaking the macro for anyone
+    ; not using exactly 800 DPI.
+    global Spin, BaseCS, CS, X
+    X := Round((Spin * BaseCS) / CS)
 }
 
 RecalcRotationPixels() {
