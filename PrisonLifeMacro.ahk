@@ -90,6 +90,7 @@ ApplyPressureJumpHotkey()
 ApplyFreezeHotkey()
 ApplyRotationHotkey()
 ApplySprintHotkey()
+SetTimer, WatchRobloxFocus, 300
 return
 
 ; ==========================================================================
@@ -168,8 +169,8 @@ BuildGui() {
 
     Gui, Tab, 4
     Gui, Add, CheckBox, x40 y216 vSprEnabledCB Checked%SprChecked% c%TextColor%, Enable Toggle Sprint
-    Gui, Add, Text, x40 y248 w420 c%DimColor%, Trigger: Shift (fixed, not rebindable)
-    Gui, Add, Text, x40 y280 w420 c%DimColor%, Press Shift once to hold it down (sprint) - press again to release it.
+    Gui, Add, Text, x40 y248 w420 c%DimColor%, Trigger: Shift (fixed, not rebindable)  -  active only while Roblox is focused
+    Gui, Add, Text, x40 y280 w420 c%DimColor%, Tap Shift to toggle sprint on, tap again to toggle it off.
 
     Gui, Tab
 
@@ -387,15 +388,20 @@ KeyDisplay(k) {
 ; ==========================================================================
 
 UnbindPressureJumpHotkey() {
-    global PressureJumpKey
+    global PressureJumpKey, TargetProcess
+    Hotkey, IfWinActive, ahk_exe %TargetProcess%
     try Hotkey, *%PressureJumpKey%, , Off
+    Hotkey, IfWinActive
 }
 
 ApplyPressureJumpHotkey() {
-    global PressureJumpKey, PressureJumpEnabled
+    global PressureJumpKey, PressureJumpEnabled, TargetProcess
     UnbindPressureJumpHotkey()
-    if (PressureJumpEnabled and PressureJumpKey != "")
+    if (PressureJumpEnabled and PressureJumpKey != "") {
+        Hotkey, IfWinActive, ahk_exe %TargetProcess%
         Hotkey, *%PressureJumpKey%, PressureJumpAction, On
+        Hotkey, IfWinActive
+    }
 }
 
 PressureJumpAction:
@@ -422,41 +428,41 @@ return
 ; ==========================================================================
 
 UnbindFreezeHotkey() {
-    global FreezeKey
+    global FreezeKey, TargetProcess
+    Hotkey, IfWinActive, ahk_exe %TargetProcess%
     try Hotkey, *%FreezeKey%, , Off
     try Hotkey, *%FreezeKey% up, , Off
+    Hotkey, IfWinActive
 }
 
 ApplyFreezeHotkey() {
-    global FreezeKey, FreezeMode, FreezeEnabled
+    global FreezeKey, FreezeMode, FreezeEnabled, TargetProcess
     UnbindFreezeHotkey()
     if (!FreezeEnabled or FreezeKey = "")
         return
+    Hotkey, IfWinActive, ahk_exe %TargetProcess%
     if (FreezeMode = "Hold") {
         Hotkey, *%FreezeKey%, HoldDown, On
         Hotkey, *%FreezeKey% up, HoldUp, On
     } else {
         Hotkey, *%FreezeKey%, ToggleFreeze, On
     }
+    Hotkey, IfWinActive
 }
 
 ToggleFreeze:
     Frozen := !Frozen
     if (Frozen) {
         SuspendProcess(TargetProcess)
-        ToolTip, Frozen
     } else {
         ResumeProcess(TargetProcess)
-        ToolTip, Unfrozen
     }
-    SetTimer, RemoveToolTip, -700
 return
 
 HoldDown:
     if (!Frozen) {
         Frozen := true
         SuspendProcess(TargetProcess)
-        ToolTip, Frozen (holding)
     }
 return
 
@@ -464,8 +470,6 @@ HoldUp:
     if (Frozen) {
         Frozen := false
         ResumeProcess(TargetProcess)
-        ToolTip, Unfrozen
-        SetTimer, RemoveToolTip, -700
     }
 return
 
@@ -501,15 +505,20 @@ ResumeProcess(ProcessName) {
 ; flick back or hold jump unless those internal flags are changed.
 
 UnbindRotationHotkey() {
-    global RotationKey
+    global RotationKey, TargetProcess
+    Hotkey, IfWinActive, ahk_exe %TargetProcess%
     try Hotkey, ~*%RotationKey%, , Off
+    Hotkey, IfWinActive
 }
 
 ApplyRotationHotkey() {
-    global RotationKey, RotationEnabled
+    global RotationKey, RotationEnabled, TargetProcess
     UnbindRotationHotkey()
-    if (RotationEnabled and RotationKey != "")
+    if (RotationEnabled and RotationKey != "") {
+        Hotkey, IfWinActive, ahk_exe %TargetProcess%
         Hotkey, ~*%RotationKey%, RotationAction, On   ; "~" lets the key/button still pass through to Roblox
+        Hotkey, IfWinActive
+    }
 }
 
 RotationAction:
@@ -557,30 +566,51 @@ return
 ; ==========================================================================
 ;                        Toggle Sprint hotkey/action
 ; ==========================================================================
-; Press once: holds Shift down (sprint engaged).
-; Press again: releases Shift (sprint disengaged).
+; Only active while Roblox (RobloxPlayerBeta.exe) is the foreground window,
+; via "Hotkey, IfWinActive, ..." (a run-time equivalent of #IfWinActive that
+; works with the dynamic Hotkey command used throughout this script).
+; Plain toggle: tap Shift to turn sprint on, tap again to turn it off.
 
 UnbindSprintHotkey() {
+    global TargetProcess
+    Hotkey, IfWinActive, ahk_exe %TargetProcess%
     try Hotkey, *Shift, , Off
+    Hotkey, IfWinActive
 }
 
 ApplySprintHotkey() {
-    global SprintEnabled
+    global SprintEnabled, SprintActive, TargetProcess
     UnbindSprintHotkey()
-    if (SprintEnabled)
+    if (SprintEnabled) {
+        Hotkey, IfWinActive, ahk_exe %TargetProcess%
         Hotkey, *Shift, ToggleSprint, On
+        Hotkey, IfWinActive
+    } else if (SprintActive) {
+        ; Sprint got disabled while active - release the held key.
+        SendInput, {Shift up}
+        SprintActive := false
+    }
 }
 
 ToggleSprint:
     SprintActive := !SprintActive
-    if (SprintActive) {
+    if (SprintActive)
         SendInput, {Shift down}
-        ToolTip, Sprint ON
-    } else {
+    else
         SendInput, {Shift up}
-        ToolTip, Sprint OFF
+return
+
+; ---- Safety net: if Roblox loses focus while sprint is active, release
+; Shift so it can't bleed held-shift behavior into other windows.
+; (Timer is started once in the auto-execute section at the top of the script.)
+WatchRobloxFocus:
+    if (SprintActive) {
+        IfWinNotActive, ahk_exe %TargetProcess%
+        {
+            SendInput, {Shift up}
+            SprintActive := false
+        }
     }
-    SetTimer, RemoveToolTip, -700
 return
 
 ; ==========================================================================
