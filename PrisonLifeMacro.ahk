@@ -53,19 +53,24 @@ FPS                := 60        ; Roblox FPS - stored/reference, same as origina
 StartMinimized     := false
 
 ; --- Pressure Jump ---
-PressureJumpKey     := "Q"
-PressureJumpEnabled := true
+PressureJumpKey     := ""       ; blank = no keybind set
+PressureJumpEnabled := false
 
 ; --- Freeze ---
-FreezeKey          := "F7"
+FreezeKey          := ""       ; blank = no keybind set
 FreezeMode         := "Toggle"  ; "Toggle" or "Hold"
-FreezeEnabled      := true
+FreezeEnabled      := false
 
 ; --- Rotation ---
-RotationKey        := "F"
-RotationEnabled    := true
+RotationKey        := ""       ; blank = no keybind set
+RotationEnabled    := false
+
+; --- Sprint ---
+; Fixed trigger: Shift (not user-rebindable, per design)
+SprintEnabled      := false
 
 Frozen        := false
+SprintActive  := false
 Capturing     := false
 CaptureTarget := ""             ; "PJ", "Freeze", or "Rotation"
 CaptureList   := []
@@ -84,6 +89,7 @@ if (StartMinimized) {
 ApplyPressureJumpHotkey()
 ApplyFreezeHotkey()
 ApplyRotationHotkey()
+ApplySprintHotkey()
 return
 
 ; ==========================================================================
@@ -93,15 +99,21 @@ return
 BuildGui() {
     global DPI, CS, FPS, PressureJumpKey, PressureJumpEnabled, FreezeKey, FreezeMode, FreezeEnabled
     global RotationKey, RotationEnabled, StartMinimized
+    global SprintEnabled
     global DPIInput, CSInput, FPSInput
     global PJEnabledCB, PJHotkeyDisplay, FreezeEnabledCB, FreezeHotkeyDisplay, ModeDD
     global RotEnabledCB, RotHotkeyDisplay, StartMinCB
+    global SprEnabledCB
 
     PJChecked       := PressureJumpEnabled ? 1 : 0
     FreezeChecked   := FreezeEnabled ? 1 : 0
     RotChecked      := RotationEnabled ? 1 : 0
+    SprChecked      := SprintEnabled ? 1 : 0
     StartMinChecked := StartMinimized ? 1 : 0
     ModeChoice      := (FreezeMode = "Hold") ? 2 : 1
+    PJKeyDisplay    := (PressureJumpKey = "") ? "(none)" : PressureJumpKey
+    FreezeKeyDisplay:= (FreezeKey = "") ? "(none)" : FreezeKey
+    RotKeyDisplay   := (RotationKey = "") ? "(none)" : RotationKey
 
     ; ---- Dark "Prison Life" theme ----
     ; Background: near-black charcoal. Accent: cell-block orange/red.
@@ -132,18 +144,18 @@ BuildGui() {
     Gui, Add, Edit, x180 y141 w90 vFPSInput cWhite, %FPS%
 
     ; ---- Tabs: one per macro ----
-    Gui, Add, Tab3, x20 y178 w480 h248 c%TextColor%, Pressure Jump|Freeze|Rotation
+    Gui, Add, Tab3, x20 y178 w480 h248 c%TextColor%, Pressure Jump|Freeze|Rotation|Sprint
 
     Gui, Tab, 1
     Gui, Add, CheckBox, x40 y216 vPJEnabledCB Checked%PJChecked% c%TextColor%, Enable Pressure Jump
     Gui, Add, Text, x40 y248 w80 c%DimColor%, Keybind:
-    Gui, Add, Text, x120 y248 vPJHotkeyDisplay w170 c%AccentColor%, %PressureJumpKey%
+    Gui, Add, Text, x120 y248 vPJHotkeyDisplay w170 c%AccentColor%, %PJKeyDisplay%
     Gui, Add, Button, x40 y276 w420 gStartCapturePJ, Click, then press key/button for Pressure Jump...
 
     Gui, Tab, 2
     Gui, Add, CheckBox, x40 y216 vFreezeEnabledCB Checked%FreezeChecked% c%TextColor%, Enable Freeze
     Gui, Add, Text, x40 y248 w80 c%DimColor%, Keybind:
-    Gui, Add, Text, x120 y248 vFreezeHotkeyDisplay w170 c%AccentColor%, %FreezeKey%
+    Gui, Add, Text, x120 y248 vFreezeHotkeyDisplay w170 c%AccentColor%, %FreezeKeyDisplay%
     Gui, Add, Button, x40 y276 w420 gStartCaptureFreeze, Click, then press key/button for Freeze...
     Gui, Add, Text, x40 y316 w80 c%DimColor%, Mode:
     Gui, Add, DropDownList, x120 y313 w340 vModeDD Choose%ModeChoice%, Toggle (press once, again to release)|Hold (frozen only while held)
@@ -151,8 +163,13 @@ BuildGui() {
     Gui, Tab, 3
     Gui, Add, CheckBox, x40 y216 vRotEnabledCB Checked%RotChecked% c%TextColor%, Enable Rotation
     Gui, Add, Text, x40 y248 w80 c%DimColor%, Keybind:
-    Gui, Add, Text, x120 y248 vRotHotkeyDisplay w170 c%AccentColor%, %RotationKey%
+    Gui, Add, Text, x120 y248 vRotHotkeyDisplay w170 c%AccentColor%, %RotKeyDisplay%
     Gui, Add, Button, x40 y276 w420 gStartCaptureRotation, Click, then press key/button for Rotation...
+
+    Gui, Tab, 4
+    Gui, Add, CheckBox, x40 y216 vSprEnabledCB Checked%SprChecked% c%TextColor%, Enable Toggle Sprint
+    Gui, Add, Text, x40 y248 w420 c%DimColor%, Trigger: Shift (fixed, not rebindable)
+    Gui, Add, Text, x40 y280 w420 c%DimColor%, Press Shift once to hold it down (sprint) - press again to release it.
 
     Gui, Tab
 
@@ -205,6 +222,7 @@ SaveSettings:
     FreezeEnabled       := FreezeEnabledCB
     FreezeMode          := InStr(ModeDD, "Hold") ? "Hold" : "Toggle"
     RotationEnabled     := RotEnabledCB
+    SprintEnabled       := SprEnabledCB
     StartMinimized      := StartMinCB
 
     RecalculateX()
@@ -213,6 +231,17 @@ SaveSettings:
     ApplyPressureJumpHotkey()
     ApplyFreezeHotkey()
     ApplyRotationHotkey()
+    ApplySprintHotkey()
+
+    Warnings := ""
+    if (PressureJumpEnabled and PressureJumpKey = "")
+        Warnings .= "- Pressure Jump is enabled but has no keybind set.`n"
+    if (FreezeEnabled and FreezeKey = "")
+        Warnings .= "- Freeze is enabled but has no keybind set.`n"
+    if (RotationEnabled and RotationKey = "")
+        Warnings .= "- Rotation is enabled but has no keybind set.`n"
+    if (Warnings != "")
+        MsgBox, 48, No Keybind Set, %Warnings%`nThose macros won't trigger until you set a keybind on their tab.
 
     ToolTip, Settings saved
     SetTimer, RemoveToolTip, -700
@@ -317,28 +346,32 @@ CaptureKeyPressed:
 
     if (Captured = "Escape") {
         if (CaptureTarget = "PJ")
-            GuiControl,, PJHotkeyDisplay, %PressureJumpKey%
+            GuiControl,, PJHotkeyDisplay, % KeyDisplay(PressureJumpKey)
         else if (CaptureTarget = "Freeze")
-            GuiControl,, FreezeHotkeyDisplay, %FreezeKey%
+            GuiControl,, FreezeHotkeyDisplay, % KeyDisplay(FreezeKey)
         else if (CaptureTarget = "Rotation")
-            GuiControl,, RotHotkeyDisplay, %RotationKey%
+            GuiControl,, RotHotkeyDisplay, % KeyDisplay(RotationKey)
     } else {
         if (CaptureTarget = "PJ") {
             PressureJumpKey := Captured
-            GuiControl,, PJHotkeyDisplay, %PressureJumpKey%
+            GuiControl,, PJHotkeyDisplay, % KeyDisplay(PressureJumpKey)
             ApplyPressureJumpHotkey()
         } else if (CaptureTarget = "Freeze") {
             FreezeKey := Captured
-            GuiControl,, FreezeHotkeyDisplay, %FreezeKey%
+            GuiControl,, FreezeHotkeyDisplay, % KeyDisplay(FreezeKey)
             ApplyFreezeHotkey()
         } else if (CaptureTarget = "Rotation") {
             RotationKey := Captured
-            GuiControl,, RotHotkeyDisplay, %RotationKey%
+            GuiControl,, RotHotkeyDisplay, % KeyDisplay(RotationKey)
             ApplyRotationHotkey()
         }
     }
     CaptureTarget := ""
 return
+
+KeyDisplay(k) {
+    return (k = "") ? "(none)" : k
+}
 
 ; ==========================================================================
 ;                         Pressure Jump hotkey/action
@@ -352,7 +385,7 @@ UnbindPressureJumpHotkey() {
 ApplyPressureJumpHotkey() {
     global PressureJumpKey, PressureJumpEnabled
     UnbindPressureJumpHotkey()
-    if (PressureJumpEnabled)
+    if (PressureJumpEnabled and PressureJumpKey != "")
         Hotkey, *%PressureJumpKey%, PressureJumpAction, On
 }
 
@@ -388,7 +421,7 @@ UnbindFreezeHotkey() {
 ApplyFreezeHotkey() {
     global FreezeKey, FreezeMode, FreezeEnabled
     UnbindFreezeHotkey()
-    if (!FreezeEnabled)
+    if (!FreezeEnabled or FreezeKey = "")
         return
     if (FreezeMode = "Hold") {
         Hotkey, *%FreezeKey%, HoldDown, On
@@ -466,7 +499,7 @@ UnbindRotationHotkey() {
 ApplyRotationHotkey() {
     global RotationKey, RotationEnabled
     UnbindRotationHotkey()
-    if (RotationEnabled)
+    if (RotationEnabled and RotationKey != "")
         Hotkey, ~*%RotationKey%, RotationAction, On   ; "~" lets the key/button still pass through to Roblox
 }
 
@@ -513,6 +546,35 @@ RotationAction:
 return
 
 ; ==========================================================================
+;                        Toggle Sprint hotkey/action
+; ==========================================================================
+; Press once: holds Shift down (sprint engaged).
+; Press again: releases Shift (sprint disengaged).
+
+UnbindSprintHotkey() {
+    try Hotkey, *Shift, , Off
+}
+
+ApplySprintHotkey() {
+    global SprintEnabled
+    UnbindSprintHotkey()
+    if (SprintEnabled)
+        Hotkey, *Shift, ToggleSprint, On
+}
+
+ToggleSprint:
+    SprintActive := !SprintActive
+    if (SprintActive) {
+        SendInput, {Shift down}
+        ToolTip, Sprint ON
+    } else {
+        SendInput, {Shift up}
+        ToolTip, Sprint OFF
+    }
+    SetTimer, RemoveToolTip, -700
+return
+
+; ==========================================================================
 ;                          Settings persistence
 ; ==========================================================================
 
@@ -521,6 +583,7 @@ LoadSettings() {
     global PressureJumpKey, PressureJumpEnabled
     global FreezeKey, FreezeMode, FreezeEnabled
     global RotationKey, RotationEnabled
+    global SprintEnabled
 
     IfExist, %SettingsFile%
     {
@@ -529,19 +592,25 @@ LoadSettings() {
         IniRead, FPS, %SettingsFile%, General, FPS, 60
         IniRead, StartMinimized, %SettingsFile%, General, StartMinimized, 0
 
-        IniRead, PressureJumpKey, %SettingsFile%, PressureJump, Hotkey, Q
-        IniRead, PressureJumpEnabled, %SettingsFile%, PressureJump, Enabled, 1
+        IniRead, PressureJumpKey, %SettingsFile%, PressureJump, Hotkey, %A_Space%
+        IniRead, PressureJumpEnabled, %SettingsFile%, PressureJump, Enabled, 0
 
-        IniRead, FreezeKey, %SettingsFile%, Freeze, Hotkey, F7
+        IniRead, FreezeKey, %SettingsFile%, Freeze, Hotkey, %A_Space%
         IniRead, FreezeMode, %SettingsFile%, Freeze, Mode, Toggle
-        IniRead, FreezeEnabled, %SettingsFile%, Freeze, Enabled, 1
+        IniRead, FreezeEnabled, %SettingsFile%, Freeze, Enabled, 0
 
-        IniRead, RotationKey, %SettingsFile%, Rotation, Hotkey, F
-        IniRead, RotationEnabled, %SettingsFile%, Rotation, Enabled, 1
+        IniRead, RotationKey, %SettingsFile%, Rotation, Hotkey, %A_Space%
+        IniRead, RotationEnabled, %SettingsFile%, Rotation, Enabled, 0
+
+        IniRead, SprintEnabled, %SettingsFile%, Sprint, Enabled, 0
     }
+    PressureJumpKey     := Trim(PressureJumpKey)
+    FreezeKey           := Trim(FreezeKey)
+    RotationKey         := Trim(RotationKey)
     PressureJumpEnabled := (PressureJumpEnabled = 1 || PressureJumpEnabled = "true")
     FreezeEnabled       := (FreezeEnabled = 1 || FreezeEnabled = "true")
     RotationEnabled     := (RotationEnabled = 1 || RotationEnabled = "true")
+    SprintEnabled       := (SprintEnabled = 1 || SprintEnabled = "true")
     StartMinimized      := (StartMinimized = 1 || StartMinimized = "true")
 }
 
@@ -550,6 +619,7 @@ SaveSettingsToFile() {
     global PressureJumpKey, PressureJumpEnabled
     global FreezeKey, FreezeMode, FreezeEnabled
     global RotationKey, RotationEnabled
+    global SprintEnabled
 
     IniWrite, %DPI%, %SettingsFile%, General, DPI
     IniWrite, %CS%, %SettingsFile%, General, Sensitivity
@@ -565,6 +635,8 @@ SaveSettingsToFile() {
 
     IniWrite, %RotationKey%, %SettingsFile%, Rotation, Hotkey
     IniWrite, % (RotationEnabled ? 1 : 0), %SettingsFile%, Rotation, Enabled
+
+    IniWrite, % (SprintEnabled ? 1 : 0), %SettingsFile%, Sprint, Enabled
 }
 
 ; ==========================================================================
