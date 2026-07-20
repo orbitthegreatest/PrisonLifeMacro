@@ -100,7 +100,8 @@ ShuffleReloadEnabled   := false
 ShuffleReloadDelayMs   := 0     ; FIXED - locked to 0ms, not user editable
 
 Frozen        := false
-SprintActive  := false
+SprintToggle  := false  ; false = next Shift tap does the quick sprint-lock sequence, true = next tap holds Shift normally
+SprintHolding := false  ; true only while physically holding Shift in the "normal hold" branch (used by the focus-loss safety net)
 Capturing     := false
 CaptureTarget := ""             ; "PJ", "Freeze", "Rotation", "FGS", "FGSOnOff", "SR", "IncSlot", or "DecSlot"
 CaptureList   := []
@@ -229,7 +230,7 @@ BuildGui() {
     Gui, Tab, 4
     Gui, Add, CheckBox, x40 y272 vSprEnabledCB Checked%SprChecked% c%TextColor%, Enable Toggle Sprint
     Gui, Add, Text, x40 y304 w420 c%DimColor%, Trigger: Shift (fixed, not rebindable)  -  active only while Roblox is focused
-    Gui, Add, Text, x40 y336 w420 c%DimColor%, Tap Shift to toggle sprint on, tap again to toggle it off.
+    Gui, Add, Text, x40 y336 w420 c%DimColor%, Tap Shift: quick sprint-lock trick. Tap again: hold Shift normally until released. Alternates each tap.
 
     Gui, Tab, 5
     Gui, Add, CheckBox, x40 y272 vFGSEnabledCB Checked%FGSChecked% c%TextColor%, Enable Fast Gun Swap
@@ -751,7 +752,10 @@ return
 ; Only active while Roblox (RobloxPlayerBeta.exe) is the foreground window,
 ; via "Hotkey, IfWinActive, ..." (a run-time equivalent of #IfWinActive that
 ; works with the dynamic Hotkey command used throughout this script).
-; Plain toggle: tap Shift to turn sprint on, tap again to turn it off.
+; Alternating behavior on every Shift tap:
+;   1st tap: quick "sprint-lock" sequence (Shift down/Esc/Shift up/Esc)
+;   2nd tap: normal hold - Shift stays down until you physically release it
+;   3rd tap: back to the quick sequence, and so on.
 
 UnbindSprintHotkey() {
     global TargetProcess
@@ -761,36 +765,52 @@ UnbindSprintHotkey() {
 }
 
 ApplySprintHotkey() {
-    global SprintEnabled, SprintActive, TargetProcess
+    global SprintEnabled, SprintHolding, SprintToggle, TargetProcess
     UnbindSprintHotkey()
     if (SprintEnabled) {
         Hotkey, IfWinActive, ahk_exe %TargetProcess%
         Hotkey, *Shift, ToggleSprint, On
         Hotkey, IfWinActive
-    } else if (SprintActive) {
-        ; Sprint got disabled while active - release the held key.
-        SendInput, {Shift up}
-        SprintActive := false
+    } else {
+        if (SprintHolding) {
+            ; Sprint got disabled mid-hold - release the held key.
+            SendInput, {Shift up}
+            SprintHolding := false
+        }
+        SprintToggle := false  ; reset so the next enable starts on the quick-sequence branch
     }
 }
 
 ToggleSprint:
-    SprintActive := !SprintActive
-    if (SprintActive)
+    if (!SprintToggle) {
+        ; --- Quick sprint-lock sequence ---
         SendInput, {Shift down}
-    else
+        Sleep, 20
+        SendInput, {Esc}
+        Sleep, 20
         SendInput, {Shift up}
+        Sleep, 20
+        SendInput, {Esc}
+    } else {
+        ; --- Normal hold behavior ---
+        SprintHolding := true
+        SendInput, {Shift down}
+        KeyWait, Shift      ; waits until you physically release Shift
+        SendInput, {Shift up}
+        SprintHolding := false
+    }
+    SprintToggle := !SprintToggle      ; flip for next press
 return
 
-; ---- Safety net: if Roblox loses focus while sprint is active, release
-; Shift so it can't bleed held-shift behavior into other windows.
+; ---- Safety net: if Roblox loses focus while mid-hold, release Shift so it
+; can't bleed held-shift behavior into other windows.
 ; (Timer is started once in the auto-execute section at the top of the script.)
 WatchRobloxFocus:
-    if (SprintActive) {
+    if (SprintHolding) {
         IfWinNotActive, ahk_exe %TargetProcess%
         {
             SendInput, {Shift up}
-            SprintActive := false
+            SprintHolding := false
         }
     }
 return
