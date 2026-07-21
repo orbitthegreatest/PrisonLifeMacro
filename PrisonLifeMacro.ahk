@@ -50,7 +50,22 @@ RotationJumpDuring   := false
 RotationFlickBack    := false
 
 ; ------------------------- Settings location -------------------------
-SettingsDir  := A_LocalAppData . "\PrisonLifeMacro"
+; A_LocalAppData can come back blank in some environments (e.g. certain
+; elevated/service contexts where the user profile isn't fully loaded).
+; When that happens, "" . "\PrisonLifeMacro" collapses to "\PrisonLifeMacro",
+; which AHK resolves against the current drive root (C:\PrisonLifeMacro) -
+; NOT the intended %localappdata%\PrisonLifeMacro. Fall back through the
+; LOCALAPPDATA env var, then rebuild it from %USERPROFILE% as a last resort.
+ResolvedLocalAppData := A_LocalAppData
+if (ResolvedLocalAppData = "") {
+    EnvGet, ResolvedLocalAppData, LOCALAPPDATA
+}
+if (ResolvedLocalAppData = "") {
+    EnvGet, FallbackUserProfile, USERPROFILE
+    ResolvedLocalAppData := FallbackUserProfile . "\AppData\Local"
+}
+
+SettingsDir  := ResolvedLocalAppData . "\PrisonLifeMacro"
 SettingsFile := SettingsDir . "\settings.ini"
 IfNotExist, %SettingsDir%
     FileCreateDir, %SettingsDir%
