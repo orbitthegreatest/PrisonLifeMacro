@@ -1,6 +1,7 @@
 ; ==========================================================================
 ;  Prison Life Macro Suite
 ;  Pressure Jump + Freeze + Rotation + Sprint + Fast Gun Swap + Shuffle Reload
+;  + Global Suspend (suspend/resume ALL macros with one key)
 ; ==========================================================================
 ;  - Roblox Sensitivity, Mouse DPI, and Roblox FPS are GLOBAL settings shared
 ;    across the macros that need them (Pressure Jump spin calc and Rotation
@@ -15,6 +16,12 @@
 ;    separate On/Off key to arm/disarm it without opening the GUI (starts
 ;    OFF by default).
 ;    Shoot delay is fixed at 1ms.
+;  - Sprint: fixed Shift toggle - tap once to hold Shift (sprint), tap again
+;    to release (stop sprint). Repeats forever. Only Shift itself is ever
+;    sent - no numbers, no symbols - so the number-row weapon/item slots and
+;    the chat are never disturbed while toggling sprint.
+;  - Global Suspend: personalisable keybind (set in the GUI) that suspends
+;    all macros at once; press it again to resume. Works from any window.
 ;  - Shuffle Reload: personalised trigger key, cycles the gun slots pressing
 ;    Reload after each one. Reload delay is fixed at 0ms.
 ;  - Target process is fixed to RobloxPlayerBeta.exe and is not user editable.
@@ -91,7 +98,8 @@ RotationKey        := ""       ; blank = no keybind set
 RotationEnabled    := false
 
 ; --- Sprint ---
-; Fixed trigger: Shift (not user-rebindable, per design)
+; Fixed trigger: Shift (not user-rebindable, per design). Pure toggle:
+; tap once = hold Shift (sprint), tap again = release (stop), repeats.
 SprintEnabled      := false
 
 ; --- Main Gun Slots (GLOBAL - shared between Fast Gun Swap & Shuffle Reload) ---
@@ -114,9 +122,13 @@ ShuffleReloadKey       := ""    ; blank = no keybind set (trigger)
 ShuffleReloadEnabled   := false
 ShuffleReloadDelayMs   := 0     ; FIXED - locked to 0ms, not user editable
 
+; --- Global Suspend (all macros) ---
+GlobalSuspendKey    := ""     ; blank = no keybind set
+GlobalSuspended     := false  ; true while ALL macros are suspended
+LastSuspendToggle   := 0      ; tick of the last suspend toggle (debounce)
+
 Frozen        := false
-SprintToggle  := false  ; false = next Shift tap does the quick sprint-lock sequence, true = next tap holds Shift normally
-SprintHolding := false  ; true only while physically holding Shift in the "normal hold" branch (used by the focus-loss safety net)
+SprintHeld    := false  ; true while the sprint toggle is holding Shift down (released by next tap, disable, suspend, or focus loss)
 Capturing     := false
 CaptureTarget := ""             ; "PJ", "Freeze", "Rotation", "FGS", "FGSOnOff", "SR", "IncSlot", or "DecSlot"
 CaptureList   := []
@@ -132,15 +144,8 @@ if (StartMinimized) {
     Gui, Hide
     TrayTip, Prison Life Macro Suite, Running minimized. Right-click the tray icon to open settings., 3
 }
-ApplyPressureJumpHotkey()
-ApplyFreezeHotkey()
-ApplyRotationHotkey()
-ApplySprintHotkey()
-ApplyFastGunSwapHotkey()
-ApplyFastGunSwapOnOffHotkey()
-ApplyShuffleReloadHotkey()
-ApplyIncreaseSlotHotkey()
-ApplyDecreaseSlotHotkey()
+ApplyAllMacros()
+ApplyGlobalSuspendHotkey()
 SetTimer, WatchRobloxFocus, 300
 return
 
@@ -158,10 +163,13 @@ BuildGui() {
     global SprEnabledCB
     global GunSlotCount, IncreaseSlotKey, DecreaseSlotKey
     global GunSlotCountInput, IncSlotHotkeyDisplay, DecSlotHotkeyDisplay
+    global GlobalSuspendKey, GSuspendHotkeyDisplay
     global FastGunSwapKey, FastGunSwapOnOffKey, FastGunSwapMode, FastGunSwapEnabled
     global FGSEnabledCB, FGSHotkeyDisplay, FGSModeDD, FGSOnOffHotkeyDisplay
     global ShuffleReloadKey, ShuffleReloadEnabled
     global SREnabledCB, SRHotkeyDisplay
+    global GuiHwnd
+    global EdgeTop, EdgeBot, EdgeLef, EdgeRig
 
     PJChecked       := PressureJumpEnabled ? 1 : 0
     FreezeChecked   := FreezeEnabled ? 1 : 0
@@ -180,109 +188,301 @@ BuildGui() {
     SRKeyDisplay    := (ShuffleReloadKey = "") ? "(none)" : ShuffleReloadKey
     IncSlotKeyDisplay := (IncreaseSlotKey = "") ? "(none)" : IncreaseSlotKey
     DecSlotKeyDisplay := (DecreaseSlotKey = "") ? "(none)" : DecreaseSlotKey
+    GSuspendKeyDisplay := (GlobalSuspendKey = "") ? "(none)" : GlobalSuspendKey
 
     ; ---- Dark "Prison Life" theme ----
     ; Background: near-black charcoal. Accent: cell-block orange/red.
     AccentColor := "FF7A1A"
+    AccentSoft  := "FFA75C"
     DimColor    := "9A9A9A"
     TextColor   := "E8E8E8"
 
     Gui, +LastFound
+    GuiHwnd := WinExist()          ; stored for the custom title bar drag (WM_NCHITTEST)
     Gui, Color, 141414, 1E1E1E
-    Gui, Font, s10, Segoe UI
-
-    ; ---- Header banner ----
-    Gui, Font, s16 Bold, Segoe UI
-    Gui, Add, Text, x20 y18 w400 c%AccentColor% BackgroundTrans, PRISON LIFE MACRO SUITE
-    Gui, Font, s9 Norm, Segoe UI
-    Gui, Add, Text, x20 y46 w440 c%DimColor% BackgroundTrans, Pressure Jump | Freeze | Rotation | Fast Gun Swap | Shuffle Reload
-    Gui, Add, Progress, x20 y72 w480 h4 Range0-100 c%AccentColor% Background141414, 100
-
-    ; ---- Global settings ----
-    Gui, Font, s10 Bold, Segoe UI
-    Gui, Add, Text, x20 y88 w200 c%TextColor% BackgroundTrans, GLOBAL SETTINGS
+    ; No OS title bar: the header doubles as a drag handle, and the two
+    ; traffic-light dots (red = close, yellow = minimize to tray) replace the
+    ; standard window buttons.
+    Gui, -Caption
+    OnMessage(0x0084, "WM_NCHITTEST")
     Gui, Font, s10 Norm, Segoe UI
-    Gui, Add, Text, x20 y114 w140 c%DimColor% BackgroundTrans, Roblox Sensitivity:
-    Gui, Add, Edit, x180 y111 w90 vCSInput cWhite, %CS%
-    Gui, Add, Text, x290 y114 w70 c%DimColor% BackgroundTrans, Mouse DPI:
-    Gui, Add, Edit, x365 y111 w95 vDPIInput cWhite, %DPI%
-    Gui, Add, Text, x20 y144 w140 c%DimColor% BackgroundTrans, Roblox FPS:
-    Gui, Add, Edit, x180 y141 w90 vFPSInput cWhite, %FPS%
 
-    ; ---- Main Gun Slots (GLOBAL - shared by Fast Gun Swap & Shuffle Reload) ----
-    Gui, Add, Text, x20 y167 w110 c%DimColor% BackgroundTrans, Gun Slots:
-    Gui, Add, Edit, x130 y164 w40 vGunSlotCountInput cWhite, %GunSlotCount%
-    Gui, Add, Text, x180 y167 w70 c%DimColor% BackgroundTrans, Increase:
-    Gui, Add, Text, x250 y167 vIncSlotHotkeyDisplay w90 c%AccentColor% BackgroundTrans, %IncSlotKeyDisplay%
-    Gui, Add, Button, x350 y161 w130 h22 gStartCaptureIncSlot, Set Increase Key
-    Gui, Add, Text, x180 y199 w70 c%DimColor% BackgroundTrans, Decrease:
-    Gui, Add, Text, x250 y199 vDecSlotHotkeyDisplay w90 c%AccentColor% BackgroundTrans, %DecSlotKeyDisplay%
-    Gui, Add, Button, x350 y193 w130 h22 gStartCaptureDecSlot, Set Decrease Key
+    ; ---- Header: logo + title banner ----
+    IfExist, %A_ScriptDir%\PrisonLifeMacro.ico
+    {
+        Gui, Add, Picture, x22 y20 w84 h84 Icon1, %A_ScriptDir%\PrisonLifeMacro.ico
+    }
+    Gui, Font, s17 Bold, Segoe UI
+    Gui, Add, Text, x122 y22 w560 c%AccentColor% BackgroundTrans, PRISON LIFE MACRO SUITE
+    Gui, Font, s9 Norm, Segoe UI
+    Gui, Add, Text, x122 y56 w560 c%TextColor% BackgroundTrans, Pressure Jump  |  Freeze  |  Rotation  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x122 y78 w560 c%DimColor% BackgroundTrans, Shift-tap sprint toggle   -   Global suspend key   -   One-click keybind captures
+    ; Accent divider under the header
+    Gui, Add, Progress, x20 y110 w660 h4 Range0-100 c%AccentColor% Background141414, 100
+
+    ; ---- Traffic-light window buttons (top-right corner) ----
+    ; Red dot: completely close the macro suite. Yellow dot: minimize to tray.
+    DotClose := CreateDotBitmap(18, 0x0000FF)   ; red
+    DotMin   := CreateDotBitmap(18, 0x00D4FF)   ; yellow
+    ; Yellow dot (left): minimize to tray. Red dot (right, far corner): close.
+    ; (the dot Picture controls are added AFTER the border strips so they stay on top)
+
+    ; ---- GLOBAL SETTINGS panel ----
+    Gui, Font, s10 Bold, Segoe UI
+    Gui, Add, GroupBox, x20 y124 w660 h112 c%DimColor%, GLOBAL SETTINGS
+    Gui, Font, s10 Norm, Segoe UI
+    Gui, Add, Text, x40 y150 w80 c%DimColor% BackgroundTrans, Sensitivity:
+    Gui, Add, Edit, x130 y147 w125 vCSInput cWhite, %CS%
+    Gui, Add, Text, x285 y150 w80 c%DimColor% BackgroundTrans, Mouse DPI:
+    Gui, Add, Edit, x375 y147 w125 vDPIInput cWhite, %DPI%
+    Gui, Add, Text, x530 y150 w80 c%DimColor% BackgroundTrans, Roblox FPS:
+    Gui, Add, Edit, x615 y147 w55 vFPSInput cWhite, %FPS%
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x40 y182 w620 c%DimColor% BackgroundTrans, Shared by Pressure Jump and Rotation - sensitivity drives the spin/flick pixel math. DPI and FPS are stored for reference.
+    Gui, Font, s10 Norm, Segoe UI
+
+    ; ---- MAIN GUN SLOTS panel ----
+    Gui, Font, s10 Bold, Segoe UI
+    Gui, Add, GroupBox, x20 y248 w660 h104 c%DimColor%, MAIN GUN SLOTS  (shared by Fast Gun Swap & Shuffle Reload)
+    Gui, Font, s10 Norm, Segoe UI
+    Gui, Add, Text, x40 y272 w110 c%DimColor% BackgroundTrans, Gun Slots:
+    Gui, Add, Edit, x160 y269 w50 vGunSlotCountInput cWhite, %GunSlotCount%
+    Gui, Add, Text, x250 y272 w60 c%DimColor% BackgroundTrans, Increase:
+    Gui, Add, Text, x315 y272 vIncSlotHotkeyDisplay w120 c%AccentColor% BackgroundTrans, %IncSlotKeyDisplay%
+    Gui, Add, Button, x455 y266 w180 h22 gStartCaptureIncSlot, Set Increase Key
+    Gui, Add, Text, x250 y302 w60 c%DimColor% BackgroundTrans, Decrease:
+    Gui, Add, Text, x315 y302 vDecSlotHotkeyDisplay w120 c%AccentColor% BackgroundTrans, %DecSlotKeyDisplay%
+    Gui, Add, Button, x455 y296 w180 h22 gStartCaptureDecSlot, Set Decrease Key
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x40 y326 w620 c%DimColor% BackgroundTrans, Slots are the first N number-row keys (1-9, 0 = 10th slot). Both macros cycle the exact same slot list.
+    Gui, Font, s10 Norm, Segoe UI
+
+    ; ---- GLOBAL SUSPEND panel ----
+    Gui, Font, s10 Bold, Segoe UI
+    Gui, Add, GroupBox, x20 y360 w660 h104 c%DimColor%, GLOBAL SUSPEND / RESUME
+    Gui, Font, s10 Norm, Segoe UI
+    Gui, Add, Text, x40 y386 w110 c%DimColor% BackgroundTrans, Suspend Key:
+    Gui, Add, Text, x160 y386 vGSuspendHotkeyDisplay w140 c%AccentColor% BackgroundTrans, %GSuspendKeyDisplay%
+    Gui, Add, Button, x455 y380 w180 h22 gStartCaptureGSuspend, Set Suspend Key
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x40 y412 w620 c%DimColor% BackgroundTrans, Press once to suspend ALL macros, press again to resume. Works from any window - even while sprinting.
+    Gui, Add, Text, x40 y430 w620 c%DimColor% BackgroundTrans, Held sprint Shift and Freeze are released and gun-swap loops stop. Keys pass through to the game while suspended.
+    Gui, Font, s10 Norm, Segoe UI
 
     ; ---- Tabs: one per macro ----
-    Gui, Add, Tab3, x20 y234 w480 h270 c%TextColor%, Pressure Jump|Freeze|Rotation|Sprint|Fast Gun Swap|Shuffle Reload
+    Gui, Add, Tab3, x20 y472 w660 h280 c%TextColor%, Pressure Jump|Freeze|Rotation|Sprint|Fast Gun Swap|Shuffle Reload
 
     Gui, Tab, 1
-    Gui, Add, CheckBox, x40 y272 vPJEnabledCB Checked%PJChecked% c%TextColor%, Enable Pressure Jump
-    Gui, Add, Text, x40 y304 w80 c%DimColor%, Keybind:
-    Gui, Add, Text, x120 y304 vPJHotkeyDisplay w170 c%AccentColor%, %PJKeyDisplay%
-    Gui, Add, Button, x40 y332 w420 gStartCapturePJ, Click, then press key/button for Pressure Jump...
+    Gui, Add, CheckBox, x40 y500 vPJEnabledCB Checked%PJChecked% c%TextColor%, Enable Pressure Jump
+    Gui, Add, Text, x40 y532 w80 c%DimColor%, Keybind:
+    Gui, Add, Text, x120 y532 vPJHotkeyDisplay w180 c%AccentColor%, %PJKeyDisplay%
+    Gui, Add, Button, x40 y560 w600 gStartCapturePJ, Click, then press key/button for Pressure Jump...
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x40 y598 w600 c%DimColor%, Hold-to-run jump. Spins the camera using the shared Sensitivity value.
+    Gui, Font, s10 Norm, Segoe UI
 
     Gui, Tab, 2
-    Gui, Add, CheckBox, x40 y272 vFreezeEnabledCB Checked%FreezeChecked% c%TextColor%, Enable Freeze
-    Gui, Add, Text, x40 y304 w80 c%DimColor%, Keybind:
-    Gui, Add, Text, x120 y304 vFreezeHotkeyDisplay w170 c%AccentColor%, %FreezeKeyDisplay%
-    Gui, Add, Button, x40 y332 w420 gStartCaptureFreeze, Click, then press key/button for Freeze...
-    Gui, Add, Text, x40 y372 w80 c%DimColor%, Mode:
-    Gui, Add, DropDownList, x120 y369 w340 vModeDD Choose%ModeChoice%, Toggle (press once, again to release)|Hold (frozen only while held)
+    Gui, Add, CheckBox, x40 y500 vFreezeEnabledCB Checked%FreezeChecked% c%TextColor%, Enable Freeze
+    Gui, Add, Text, x40 y532 w80 c%DimColor%, Keybind:
+    Gui, Add, Text, x120 y532 vFreezeHotkeyDisplay w180 c%AccentColor%, %FreezeKeyDisplay%
+    Gui, Add, Button, x40 y560 w600 gStartCaptureFreeze, Click, then press key/button for Freeze...
+    Gui, Add, Text, x40 y600 w80 c%DimColor%, Mode:
+    Gui, Add, DropDownList, x120 y596 w520 vModeDD Choose%ModeChoice%, Toggle (press once, again to release)|Hold (frozen only while held)
 
     Gui, Tab, 3
-    Gui, Add, CheckBox, x40 y272 vRotEnabledCB Checked%RotChecked% c%TextColor%, Enable Rotation
-    Gui, Add, Text, x40 y304 w80 c%DimColor%, Keybind:
-    Gui, Add, Text, x120 y304 vRotHotkeyDisplay w170 c%AccentColor%, %RotKeyDisplay%
-    Gui, Add, Button, x40 y332 w420 gStartCaptureRotation, Click, then press key/button for Rotation...
+    Gui, Add, CheckBox, x40 y500 vRotEnabledCB Checked%RotChecked% c%TextColor%, Enable Rotation
+    Gui, Add, Text, x40 y532 w80 c%DimColor%, Keybind:
+    Gui, Add, Text, x120 y532 vRotHotkeyDisplay w180 c%AccentColor%, %RotKeyDisplay%
+    Gui, Add, Button, x40 y560 w600 gStartCaptureRotation, Click, then press key/button for Rotation...
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x40 y598 w600 c%DimColor%, Wallhop flick. Camera flick pixel amount comes from the shared Sensitivity.
+    Gui, Font, s10 Norm, Segoe UI
 
     Gui, Tab, 4
-    Gui, Add, CheckBox, x40 y272 vSprEnabledCB Checked%SprChecked% c%TextColor%, Enable Toggle Sprint
-    Gui, Add, Text, x40 y304 w420 c%DimColor%, Trigger: Shift (fixed, not rebindable)  -  active only while Roblox is focused
-    Gui, Add, Text, x40 y336 w420 c%DimColor%, Tap Shift: quick sprint-lock trick. Tap again: hold Shift normally until released. Alternates each tap.
+    Gui, Add, CheckBox, x40 y500 vSprEnabledCB Checked%SprChecked% c%TextColor%, Enable Toggle Sprint
+    Gui, Add, Text, x40 y532 w600 c%DimColor%, Trigger: Shift (fixed, not rebindable)  -  active only while Roblox is focused
+    Gui, Add, Text, x40 y562 w600 c%DimColor%, Tap Shift: hold Shift (sprint). Tap again: release Shift (stop). Repeats forever.
+    Gui, Add, Text, x40 y588 w600 c%DimColor%, Only Shift itself is pressed - number/item slot keys and symbols are never touched.
 
     Gui, Tab, 5
-    Gui, Add, CheckBox, x40 y272 vFGSEnabledCB Checked%FGSChecked% c%TextColor%, Enable Fast Gun Swap
-    Gui, Add, Text, x40 y302 w90 c%DimColor%, Trigger:
-    Gui, Add, Text, x130 y302 vFGSHotkeyDisplay w160 c%AccentColor%, %FGSKeyDisplay%
-    Gui, Add, Button, x40 y326 w420 h26 gStartCaptureFGS, Click, then press key/button for Fast Gun Swap Trigger...
-    Gui, Add, Text, x40 y362 w80 c%DimColor%, Mode:
-    Gui, Add, DropDownList, x120 y359 w340 vFGSModeDD Choose%FGSModeChoice%, Hold (repeat while held)|Toggle (press once to start/stop)
-    Gui, Add, Text, x40 y394 w90 c%DimColor%, On/Off Key:
-    Gui, Add, Text, x130 y394 vFGSOnOffHotkeyDisplay w160 c%AccentColor%, %FGSOnOffKeyDisplay%
-    Gui, Add, Button, x40 y418 w420 h26 gStartCaptureFGSOnOff, Click, then press key/button for Fast Gun Swap On/Off...
+    Gui, Add, CheckBox, x40 y500 vFGSEnabledCB Checked%FGSChecked% c%TextColor%, Enable Fast Gun Swap
+    Gui, Add, Text, x40 y530 w90 c%DimColor%, Trigger:
+    Gui, Add, Text, x130 y530 vFGSHotkeyDisplay w180 c%AccentColor%, %FGSKeyDisplay%
+    Gui, Add, Button, x320 y528 w320 h26 gStartCaptureFGS, Click, then press key/button for Fast Gun Swap Trigger...
+    Gui, Add, Text, x40 y566 w80 c%DimColor%, Mode:
+    Gui, Add, DropDownList, x120 y562 w520 vFGSModeDD Choose%FGSModeChoice%, Hold (repeat while held)|Toggle (press once to start/stop)
+    Gui, Add, Text, x40 y600 w90 c%DimColor%, On/Off Key:
+    Gui, Add, Text, x130 y600 vFGSOnOffHotkeyDisplay w180 c%AccentColor%, %FGSOnOffKeyDisplay%
+    Gui, Add, Button, x320 y598 w320 h26 gStartCaptureFGSOnOff, Click, then press key/button for Fast Gun Swap On/Off...
     Gui, Font, s8 Norm, Segoe UI
-    Gui, Add, Text, x40 y452 w420 c%DimColor%, Shoot delay is fixed at 1ms. Fast Gun Swap starts OFF - press the On/Off key to arm it.
-    Gui, Add, Text, x40 y470 w420 c%DimColor%, Slot count and its +/- keys are set under Main Gun Slots above (global).
+    Gui, Add, Text, x40 y636 w600 c%DimColor%, Shoot delay is fixed at 1ms. Fast Gun Swap starts OFF - press the On/Off key to arm it.
+    Gui, Add, Text, x40 y654 w600 c%DimColor%, Slot count and its +/- keys are set under Main Gun Slots above (global).
     Gui, Font, s10 Norm, Segoe UI
 
     Gui, Tab, 6
-    Gui, Add, CheckBox, x40 y272 vSREnabledCB Checked%SRChecked% c%TextColor%, Enable Shuffle Reload
-    Gui, Add, Text, x40 y302 w90 c%DimColor%, Trigger:
-    Gui, Add, Text, x130 y302 vSRHotkeyDisplay w160 c%AccentColor%, %SRKeyDisplay%
-    Gui, Add, Button, x40 y326 w420 h26 gStartCaptureSR, Click, then press key/button for Shuffle Reload Trigger...
+    Gui, Add, CheckBox, x40 y500 vSREnabledCB Checked%SRChecked% c%TextColor%, Enable Shuffle Reload
+    Gui, Add, Text, x40 y530 w90 c%DimColor%, Trigger:
+    Gui, Add, Text, x130 y530 vSRHotkeyDisplay w180 c%AccentColor%, %SRKeyDisplay%
+    Gui, Add, Button, x320 y528 w320 h26 gStartCaptureSR, Click, then press key/button for Shuffle Reload Trigger...
     Gui, Font, s8 Norm, Segoe UI
-    Gui, Add, Text, x40 y362 w420 c%DimColor%, Reload delay is fixed at 0ms.
-    Gui, Add, Text, x40 y380 w420 c%DimColor%, Slot count and its +/- keys are set under Main Gun Slots above (global).
+    Gui, Add, Text, x40 y572 w600 c%DimColor%, Reload delay is fixed at 0ms.
+    Gui, Add, Text, x40 y590 w600 c%DimColor%, Slot count and its +/- keys are set under Main Gun Slots above (global).
     Gui, Font, s10 Norm, Segoe UI
 
     Gui, Tab
 
-    Gui, Add, CheckBox, x20 y514 vStartMinCB Checked%StartMinChecked% c%TextColor%, Start minimized (to tray)
+    Gui, Add, CheckBox, x20 y784 vStartMinCB Checked%StartMinChecked% c%TextColor%, Start minimized (to tray)
+    Gui, Font, s8 Norm, Segoe UI
+    Gui, Add, Text, x240 y786 w440 c%DimColor% BackgroundTrans, Target: RobloxPlayerBeta.exe   -   Settings: %localappdata%\PrisonLifeMacro\settings.ini
+    Gui, Font, s10 Norm, Segoe UI
 
-    Gui, Add, Button, x20 y546 w235 h32 gSaveSettings Default, Save
-    Gui, Add, Button, x265 y546 w235 h32 gGuiCancel, Hide
+    Gui, Add, Button, x20 y816 w320 h34 gSaveSettings Default, Save Settings
+    Gui, Add, Button, x360 y816 w320 h34 gGuiCancel, Hide to Tray
+
+    ; ---- 1px white outline + rounded corners ----
+    ; The top/bottom strips are 9px tall so they can carry the white corner
+    ; arcs that follow the rounded window region; everything else in the
+    ; strips is the GUI background color so they blend in.
+    EdgeTop := CreateRoundedEdgeBitmap(700, 9, 0xFFFFFF, "top")
+    EdgeBot := CreateRoundedEdgeBitmap(700, 9, 0xFFFFFF, "bottom")
+    EdgeLef := CreateSolidBitmap(1, 866, 0xFFFFFF)
+    EdgeRig := CreateSolidBitmap(1, 866, 0xFFFFFF)
+    Gui, Add, Picture, x0 y0 w700 h9 vEdgeTop, HBITMAP:*%EdgeTop%
+    Gui, Add, Picture, x0 y857 w700 h9 vEdgeBot, HBITMAP:*%EdgeBot%
+    Gui, Add, Picture, x0 y0 w1 h866 vEdgeLef, HBITMAP:*%EdgeLef%
+    Gui, Add, Picture, x699 y0 w1 h866 vEdgeRig, HBITMAP:*%EdgeRig%
+
+    ; Traffic-light window buttons - added after the strips so they sit on top.
+    Gui, Add, Picture, x646 y10 w18 h18 gDotHide, HBITMAP:*%DotMin%
+    Gui, Add, Picture, x670 y10 w18 h18 gDotExit, HBITMAP:*%DotClose%
 
     Gui, Margin, 20, 20
-    Gui, +MinimizeBox
-    Gui, Show, w520 h598, Prison Life Macro Settings
+    Gui, Show, w700 h866, Prison Life Macro Settings
+    WinSet, Region, 0-0 W701 H867 R16-16, ahk_id %GuiHwnd%
 }
+
+; ==========================================================================
+;                    Custom title bar (traffic-light dots)
+; ==========================================================================
+
+CreateDotBitmap(d, colorBGR) {
+    ; Creates a square bitmap filled with the GUI background color and a
+    ; filled circle of the given color - used for the red/yellow window dots.
+    hbm := DllCall("CreateBitmap", "Int", d, "Int", d, "UInt", 1, "UInt", 32, "Ptr", 0, "Ptr")
+    hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
+    hbmOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm)
+    hpen := DllCall("CreatePen", "Int", 5, "Int", 0, "UInt", 0, "Ptr")   ; PS_NULL - no outline
+    hpenOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hpen)
+    hbr := DllCall("CreateSolidBrush", "UInt", 0x141414, "Ptr")          ; GUI background
+    hbrOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbr)
+    DllCall("Rectangle", "Ptr", hdc, "Int", 0, "Int", 0, "Int", d, "Int", d)
+    DllCall("DeleteObject", "Ptr", hbr)
+    hbr := DllCall("CreateSolidBrush", "UInt", colorBGR, "Ptr")
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbr)
+    DllCall("Ellipse", "Ptr", hdc, "Int", 1, "Int", 1, "Int", d - 1, "Int", d - 1)
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbrOld)
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hpenOld)
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbmOld)
+    DllCall("DeleteObject", "Ptr", hbr)
+    DllCall("DeleteObject", "Ptr", hpen)
+    DllCall("DeleteDC", "Ptr", hdc)
+    return hbm
+}
+
+CreateSolidBitmap(w, h, colorBGR) {
+    ; Creates a solid-color bitmap - used for the 1px white window outline.
+    hbm := DllCall("CreateBitmap", "Int", w, "Int", h, "UInt", 1, "UInt", 32, "Ptr", 0, "Ptr")
+    hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
+    hbmOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm)
+    hbr := DllCall("CreateSolidBrush", "UInt", colorBGR, "Ptr")
+    hbrOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbr)
+    DllCall("PatBlt", "Ptr", hdc, "Int", 0, "Int", 0, "Int", w, "Int", h, "UInt", 0x00F00021)   ; PATCOPY
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbrOld)
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbmOld)
+    DllCall("DeleteObject", "Ptr", hbr)
+    DllCall("DeleteDC", "Ptr", hdc)
+    return hbm
+}
+
+CreateRoundedEdgeBitmap(w, h, colorBGR, side) {
+    ; 1px outline along a window edge INCLUDING the rounded-corner arcs, so
+    ; the white border follows the curve of the window region. AHK's
+    ; "R16-16" region option creates a 16px corner ellipse, i.e. radius 8,
+    ; so the arcs are drawn with r = 8. All other pixels are the GUI
+    ; background (0x141414) so the strip blends in.
+    ; side = "top" or "bottom" (the left/right edges stay straight 1px strips).
+    r := 8
+    if (side = "top") {
+        yEdge := 0
+        cy1 := r, cy2 := r     ; corner circle centers
+    } else {
+        yEdge := h - 1
+        cy1 := 0, cy2 := 0     ; bottom strip starts at window bottom minus r
+    }
+    hbm := DllCall("CreateBitmap", "Int", w, "Int", h, "UInt", 1, "UInt", 32, "Ptr", 0, "Ptr")
+    hdc := DllCall("CreateCompatibleDC", "Ptr", 0, "Ptr")
+    hbmOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbm)
+    hbr := DllCall("CreateSolidBrush", "UInt", 0x141414, "Ptr")          ; GUI background
+    hbrOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hbr)
+    DllCall("PatBlt", "Ptr", hdc, "Int", 0, "Int", 0, "Int", w, "Int", h, "UInt", 0x00F00021)
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbrOld)
+    DllCall("DeleteObject", "Ptr", hbr)
+    ; straight edge between the two corner circles
+    hpen := DllCall("CreatePen", "Int", 0, "Int", 1, "UInt", colorBGR, "Ptr")   ; PS_SOLID 1px
+    hpenOld := DllCall("SelectObject", "Ptr", hdc, "Ptr", hpen)
+    DllCall("MoveToEx", "Ptr", hdc, "Int", r, "Int", yEdge, "Ptr", 0)
+    DllCall("LineTo", "Ptr", hdc, "Int", w - 1 - r, "Int", yEdge)
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hpenOld)
+    DllCall("DeleteObject", "Ptr", hpen)
+    ; corner arcs: paint the pixels whose centers lie on the r8 boundary
+    ; band (49..66), matching the window region's own rasterization
+    Loop, 9 {
+        yy := A_Index - 1
+        Loop, 9 {
+            xx := A_Index - 1
+            dx1 := xx + 0.5 - r
+            dy1 := yy + 0.5 - cy1
+            d2 := dx1 * dx1 + dy1 * dy1
+            if (d2 >= 49 && d2 <= 66)
+                DllCall("SetPixelV", "Ptr", hdc, "Int", xx, "Int", yy, "UInt", colorBGR)
+            dx2 := r - xx + 0.5
+            d2 := dx2 * dx2 + dy1 * dy1
+            if (d2 >= 49 && d2 <= 66)
+                DllCall("SetPixelV", "Ptr", hdc, "Int", w - 1 - xx, "Int", yy, "UInt", colorBGR)
+        }
+    }
+    DllCall("SelectObject", "Ptr", hdc, "Ptr", hbmOld)
+    DllCall("DeleteDC", "Ptr", hdc)
+    return hbm
+}
+
+WM_NCHITTEST(wParam, lParam) {
+    ; Since the OS title bar is removed, the header area acts as the drag
+    ; handle. The two dot buttons are excluded so their g-labels still fire.
+    global GuiHwnd
+    x := lParam & 0xFFFF
+    y := lParam >> 16
+    WinGetPos, wx, wy, , , ahk_id %GuiHwnd%
+    cx := x - wx
+    cy := y - wy
+    if (cx >= 646 and cx <= 688 and cy >= 10 and cy <= 28)
+        return 1    ; HTCLIENT - let the dot picture receive the click
+    if (cy < 110)
+        return 2    ; HTCAPTION - drag the window from the header
+    return 1        ; HTCLIENT everywhere else
+}
+
+DotExit:
+    ; Red dot - completely close the whole macro suite.
+    DllCall("Winmm\timeEndPeriod", "UInt", 1)
+    ExitApp
+return
+
+DotHide:
+    ; Yellow dot - hide the settings window to the tray.
+    Gui, Hide
+return
 
 GuiSize:
     ; A_EventInfo = 1 means the window was just minimized via the title bar "-" button.
@@ -338,15 +538,11 @@ SaveSettings:
     RecalculateX()
     RecalcRotationPixels()
     SaveSettingsToFile()
-    ApplyPressureJumpHotkey()
-    ApplyFreezeHotkey()
-    ApplyRotationHotkey()
-    ApplySprintHotkey()
-    ApplyFastGunSwapHotkey()
-    ApplyFastGunSwapOnOffHotkey()
-    ApplyShuffleReloadHotkey()
-    ApplyIncreaseSlotHotkey()
-    ApplyDecreaseSlotHotkey()
+    ; If all macros are currently suspended, keep them suspended after saving.
+    if (GlobalSuspended)
+        SuspendAllMacros()
+    else
+        ApplyAllMacros()
 
     Warnings := ""
     if (PressureJumpEnabled and PressureJumpKey = "")
@@ -506,9 +702,21 @@ StartCaptureDecSlot:
     BeginKeyListen()
 return
 
+StartCaptureGSuspend:
+    if (Capturing)
+        return
+    Capturing := true
+    CaptureTarget := "GSuspend"
+    GuiControl,, GSuspendHotkeyDisplay, Press a key or click a mouse button... (Esc cancels)
+    UnbindGlobalSuspendHotkey()
+    BeginKeyListen()
+return
+
 BeginKeyListen() {
-    global CaptureList
+    global CaptureList, GlobalSuspendKey
     CaptureList := BuildKeyList()
+    ; Temporarily unbind the suspend key so it can't fire mid-capture.
+    try Hotkey, *%GlobalSuspendKey%, , Off
     for _, k in CaptureList
         try Hotkey, *%k%, CaptureKeyPressed, On
 }
@@ -539,6 +747,8 @@ CaptureKeyPressed:
             GuiControl,, IncSlotHotkeyDisplay, % KeyDisplay(IncreaseSlotKey)
         else if (CaptureTarget = "DecSlot")
             GuiControl,, DecSlotHotkeyDisplay, % KeyDisplay(DecreaseSlotKey)
+        else if (CaptureTarget = "GSuspend")
+            GuiControl,, GSuspendHotkeyDisplay, % KeyDisplay(GlobalSuspendKey)
     } else {
         if (CaptureTarget = "PJ") {
             PressureJumpKey := Captured
@@ -572,9 +782,19 @@ CaptureKeyPressed:
             DecreaseSlotKey := Captured
             GuiControl,, DecSlotHotkeyDisplay, % KeyDisplay(DecreaseSlotKey)
             ApplyDecreaseSlotHotkey()
+        } else if (CaptureTarget = "GSuspend") {
+            GlobalSuspendKey := Captured
+            GuiControl,, GSuspendHotkeyDisplay, % KeyDisplay(GlobalSuspendKey)
+            ApplyGlobalSuspendHotkey()
         }
     }
     CaptureTarget := ""
+    ; Re-bind the suspend key (BeginKeyListen unbinds it for every capture).
+    ApplyGlobalSuspendHotkey()
+    ; If all macros are suspended, re-unbind anything a captured key just
+    ; re-applied, so the suspension stays in effect.
+    if (GlobalSuspended)
+        SuspendAllMacros()
 return
 
 KeyDisplay(k) {
@@ -767,67 +987,138 @@ return
 ; Only active while Roblox (RobloxPlayerBeta.exe) is the foreground window,
 ; via "Hotkey, IfWinActive, ..." (a run-time equivalent of #IfWinActive that
 ; works with the dynamic Hotkey command used throughout this script).
-; Alternating behavior on every Shift tap:
-;   1st tap: quick "sprint-lock" sequence (Shift down/Esc/Shift up/Esc)
-;   2nd tap: normal hold - Shift stays down until you physically release it
-;   3rd tap: back to the quick sequence, and so on.
+; Pure toggle on every Shift tap:
+;   tap #1: sends {Shift down} - Roblox starts sprinting
+;   tap #2: sends {Shift up}   - Roblox stops sprinting
+;   ...and so on, alternating forever.
+; The physical Shift key is consumed by the hotkey (no "*" prefix), so the
+; game only ever sees the synthetic events this macro sends. Nothing else is
+; pressed - no numbers, no symbols - so the number-row weapon/item slot keys
+; (1-0) and the chat are never disturbed while toggling sprint.
 
 UnbindSprintHotkey() {
     global TargetProcess
     Hotkey, IfWinActive, ahk_exe %TargetProcess%
-    try Hotkey, *Shift, , Off
+    try Hotkey, Shift, , Off
     Hotkey, IfWinActive
 }
 
 ApplySprintHotkey() {
-    global SprintEnabled, SprintHolding, SprintToggle, TargetProcess
+    global SprintEnabled, SprintHeld, TargetProcess
     UnbindSprintHotkey()
     if (SprintEnabled) {
         Hotkey, IfWinActive, ahk_exe %TargetProcess%
-        Hotkey, *Shift, ToggleSprint, On
+        Hotkey, Shift, ToggleSprint, On   ; no "*" - the physical key is blocked so the game only gets our toggle events
         Hotkey, IfWinActive
-    } else {
-        if (SprintHolding) {
-            ; Sprint got disabled mid-hold - release the held key.
-            SendInput, {Shift up}
-            SprintHolding := false
-        }
-        SprintToggle := false  ; reset so the next enable starts on the quick-sequence branch
+    } else if (SprintHeld) {
+        ; Sprint got disabled mid-toggle - release the held key.
+        SendInput, {Shift up}
+        SprintHeld := false
     }
 }
 
 ToggleSprint:
-    if (!SprintToggle) {
-        ; --- Quick sprint-lock sequence ---
-        SendInput, {Shift down}
-        Sleep, 20
-        SendInput, {Esc}
-        Sleep, 20
+    if (SprintHeld) {
         SendInput, {Shift up}
-        Sleep, 20
-        SendInput, {Esc}
+        SprintHeld := false
     } else {
-        ; --- Normal hold behavior ---
-        SprintHolding := true
         SendInput, {Shift down}
-        KeyWait, Shift      ; waits until you physically release Shift
-        SendInput, {Shift up}
-        SprintHolding := false
+        SprintHeld := true
     }
-    SprintToggle := !SprintToggle      ; flip for next press
 return
 
 ; ---- Safety net: if Roblox loses focus while mid-hold, release Shift so it
 ; can't bleed held-shift behavior into other windows.
 ; (Timer is started once in the auto-execute section at the top of the script.)
 WatchRobloxFocus:
-    if (SprintHolding) {
+    if (SprintHeld) {
         IfWinNotActive, ahk_exe %TargetProcess%
         {
             SendInput, {Shift up}
-            SprintHolding := false
+            SprintHeld := false
         }
     }
+return
+
+; ==========================================================================
+;                  Global Suspend / Resume (all macros)
+; ==========================================================================
+; A personalisable hotkey (set in the GUI) that suspends or resumes every
+; macro at once. While suspended all macro hotkeys are unbound, so the keys
+; pass through to the game normally (e.g. you can still hold Shift to sprint
+; by hand). Anything being held at suspend time (Shift, Freeze, a gun-swap
+; loop) is released/stopped first. The suspend key itself is never unbound,
+; so it always works - even mid-suspension. Works from any window.
+
+UnbindGlobalSuspendHotkey() {
+    global GlobalSuspendKey
+    try Hotkey, *%GlobalSuspendKey%, , Off
+}
+
+ApplyGlobalSuspendHotkey() {
+    global GlobalSuspendKey
+    UnbindGlobalSuspendHotkey()
+    ; "*" wildcard: the hotkey must fire even while Shift (sprint) or any
+    ; other modifier is held - a plain modifier-only hotkey like LAlt would
+    ; be treated as "Shift+Alt" while sprinting and get swallowed.
+    if (GlobalSuspendKey != "")
+        Hotkey, *%GlobalSuspendKey%, ToggleGlobalSuspend, On
+}
+
+ApplyAllMacros() {
+    ApplyPressureJumpHotkey()
+    ApplyFreezeHotkey()
+    ApplyRotationHotkey()
+    ApplySprintHotkey()
+    ApplyFastGunSwapHotkey()
+    ApplyFastGunSwapOnOffHotkey()
+    ApplyShuffleReloadHotkey()
+    ApplyIncreaseSlotHotkey()
+    ApplyDecreaseSlotHotkey()
+}
+
+SuspendAllMacros() {
+    global GlobalSuspended, SprintHeld, Frozen, FastGunSwapHolding, TargetProcess
+    GlobalSuspended := true
+    if (SprintHeld) {
+        SendInput, {Shift up}
+        SprintHeld := false
+    }
+    if (Frozen) {
+        Frozen := false
+        ResumeProcess(TargetProcess)
+    }
+    FastGunSwapHolding := false
+    UnbindPressureJumpHotkey()
+    UnbindFreezeHotkey()
+    UnbindRotationHotkey()
+    UnbindSprintHotkey()
+    UnbindFastGunSwapHotkey()
+    UnbindFastGunSwapOnOffHotkey()
+    UnbindShuffleReloadHotkey()
+    UnbindIncreaseSlotHotkey()
+    UnbindDecreaseSlotHotkey()
+}
+
+ToggleGlobalSuspend:
+    ; Wait for the physical key release first: modifier-key hotkeys need the
+    ; key to be fully up before the next press can be registered cleanly.
+    KeyWait, %GlobalSuspendKey%
+    ; Debounce: a modifier hotkey can occasionally double-fire on one press.
+    if (A_TickCount - LastSuspendToggle < 250)
+        return
+    LastSuspendToggle := A_TickCount
+    if (GlobalSuspended) {
+        ApplyAllMacros()
+        GlobalSuspended := false
+    } else {
+        SuspendAllMacros()
+    }
+    if (GlobalSuspended)
+        ToolTip, ALL MACROS SUSPENDED - press %GlobalSuspendKey% to resume
+    else
+        ToolTip, All macros resumed
+    SetTimer, RemoveToolTip, -1500
 return
 
 ; ==========================================================================
@@ -1055,6 +1346,7 @@ LoadSettings() {
     global GunSlotCount, IncreaseSlotKey, DecreaseSlotKey
     global FastGunSwapKey, FastGunSwapOnOffKey, FastGunSwapMode, FastGunSwapEnabled
     global ShuffleReloadKey, ShuffleReloadEnabled
+    global GlobalSuspendKey
 
     IfExist, %SettingsFile%
     {
@@ -1086,6 +1378,8 @@ LoadSettings() {
 
         IniRead, ShuffleReloadKey, %SettingsFile%, ShuffleReload, Hotkey, %A_Space%
         IniRead, ShuffleReloadEnabled, %SettingsFile%, ShuffleReload, Enabled, 0
+
+        IniRead, GlobalSuspendKey, %SettingsFile%, Global, SuspendKey, %A_Space%
     }
     PressureJumpKey       := Trim(PressureJumpKey)
     FreezeKey             := Trim(FreezeKey)
@@ -1095,6 +1389,7 @@ LoadSettings() {
     FastGunSwapKey        := Trim(FastGunSwapKey)
     FastGunSwapOnOffKey := Trim(FastGunSwapOnOffKey)
     ShuffleReloadKey      := Trim(ShuffleReloadKey)
+    GlobalSuspendKey      := Trim(GlobalSuspendKey)
     PressureJumpEnabled := (PressureJumpEnabled = 1 || PressureJumpEnabled = "true")
     FreezeEnabled       := (FreezeEnabled = 1 || FreezeEnabled = "true")
     RotationEnabled     := (RotationEnabled = 1 || RotationEnabled = "true")
@@ -1121,6 +1416,7 @@ SaveSettingsToFile() {
     global GunSlotCount, IncreaseSlotKey, DecreaseSlotKey
     global FastGunSwapKey, FastGunSwapOnOffKey, FastGunSwapMode, FastGunSwapEnabled
     global ShuffleReloadKey, ShuffleReloadEnabled
+    global GlobalSuspendKey
 
     IniWrite, %DPI%, %SettingsFile%, General, DPI
     IniWrite, %CS%, %SettingsFile%, General, Sensitivity
@@ -1150,6 +1446,8 @@ SaveSettingsToFile() {
 
     IniWrite, %ShuffleReloadKey%, %SettingsFile%, ShuffleReload, Hotkey
     IniWrite, % (ShuffleReloadEnabled ? 1 : 0), %SettingsFile%, ShuffleReload, Enabled
+
+    IniWrite, %GlobalSuspendKey%, %SettingsFile%, Global, SuspendKey
 }
 
 ; ==========================================================================
@@ -1158,7 +1456,9 @@ SaveSettingsToFile() {
 
 BuildTray() {
     Menu, Tray, NoStandard
+    try Menu, Tray, Icon, %A_ScriptDir%\PrisonLifeMacro.ico
     Menu, Tray, Add, Open Settings, TrayShowSettings
+    Menu, Tray, Add, Suspend/Resume All Macros, ToggleGlobalSuspend
     Menu, Tray, Add
     Menu, Tray, Add, Exit, TrayExit
     Menu, Tray, Default, Open Settings
