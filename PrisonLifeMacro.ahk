@@ -208,10 +208,11 @@ BuildGui() {
     Gui, Font, s10 Norm, Segoe UI
 
     ; ---- Header: logo + title banner ----
-    IfExist, %A_ScriptDir%\PrisonLifeMacro.ico
-    {
-        Gui, Add, Picture, x22 y20 w84 h84 Icon1, %A_ScriptDir%\PrisonLifeMacro.ico
-    }
+    ; The icon is embedded in the compiled exe via FileInstall so the logo
+    ; renders even when only the .exe is distributed (e.g. downloaded alone
+    ; from GitHub) with no .ico file beside it.
+    FileInstall, PrisonLifeMacro.ico, %A_Temp%\PrisonLifeMacro_icon.ico, 1
+    Gui, Add, Picture, x22 y20 w84 h84 Icon1, %A_Temp%\PrisonLifeMacro_icon.ico
     Gui, Font, s17 Bold, Segoe UI
     Gui, Add, Text, x122 y22 w560 c%AccentColor% BackgroundTrans, PRISON LIFE MACRO SUITE
     Gui, Font, s9 Norm, Segoe UI
