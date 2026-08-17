@@ -26,6 +26,10 @@
 ;    Reload after each one. Reload delay is fixed at 0ms.
 ;  - Target process is fixed to RobloxPlayerBeta.exe and is not user editable.
 ;  - Settings are stored at: %localappdata%\PrisonLifeMacro\settings.ini
+;  - Update Detector: on startup and every hour it checks the GitHub releases
+;    page (github.com/orbitthegreatest/PrisonLifeMacro) for a newer release.
+;    A tray notification is shown once per new release, and there is a manual
+;    "Check for Updates" button (GUI + tray) that opens the download page.
 ; ==========================================================================
 
 #SingleInstance Force
@@ -55,6 +59,17 @@ RotationBonusDelay   := 0        ; ms, fixed
 RotationLeftFlick    := false
 RotationJumpDuring   := false
 RotationFlickBack    := false
+
+; ------------------------- Update detector constants -------------------------
+; Checks the GitHub releases page for a release newer than ScriptVersion.
+; Bump ScriptVersion to match the latest release tag whenever you publish one
+; (the GUI header shows it, and the updater uses it as the "installed" version).
+ScriptVersion      := "3.6.0"                       ; installed version - keep in sync with your latest release tag
+UpdateRepo         := "orbitthegreatest/PrisonLifeMacro"
+UpdateApiUrl       := "https://api.github.com/repos/" . UpdateRepo . "/releases/latest"
+UpdateReleasesUrl  := "https://github.com/" . UpdateRepo . "/releases/latest"
+UpdateCheckMs      := 3600000                       ; background re-check interval (1 hour)
+UpdateLastNotified := ""                            ; last release the user was notified about (persisted to settings.ini)
 
 ; ------------------------- Settings location -------------------------
 ; A_LocalAppData can come back blank in some environments (e.g. certain
@@ -147,6 +162,8 @@ if (StartMinimized) {
 ApplyAllMacros()
 ApplyGlobalSuspendHotkey()
 SetTimer, WatchRobloxFocus, 300
+SetTimer, UpdateCheckStartup, -4000   ; first update check, shortly after the GUI is up
+SetTimer, UpdateCheckPeriodic, %UpdateCheckMs%
 return
 
 ; ==========================================================================
@@ -214,7 +231,7 @@ BuildGui() {
     FileInstall, PrisonLifeMacro.ico, %A_Temp%\PrisonLifeMacro_icon.ico, 1
     Gui, Add, Picture, x22 y20 w84 h84 Icon1, %A_Temp%\PrisonLifeMacro_icon.ico
     Gui, Font, s17 Bold, Segoe UI
-    Gui, Add, Text, x122 y22 w560 c%AccentColor% BackgroundTrans, PRISON LIFE MACRO SUITE
+    Gui, Add, Text, x122 y22 w560 c%AccentColor% BackgroundTrans, PRISON LIFE MACRO SUITE  v%ScriptVersion%
     Gui, Font, s9 Norm, Segoe UI
     Gui, Add, Text, x122 y56 w560 c%TextColor% BackgroundTrans, Pressure Jump  |  Freeze  |  Rotation  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload
     Gui, Font, s8 Norm, Segoe UI
@@ -335,7 +352,8 @@ BuildGui() {
 
     Gui, Add, CheckBox, x20 y784 vStartMinCB Checked%StartMinChecked% c%TextColor%, Start minimized (to tray)
     Gui, Font, s8 Norm, Segoe UI
-    Gui, Add, Text, x240 y786 w440 c%DimColor% BackgroundTrans, Target: RobloxPlayerBeta.exe   -   Settings: %localappdata%\PrisonLifeMacro\settings.ini
+    Gui, Add, Text, x240 y786 w345 c%DimColor% BackgroundTrans, Target: RobloxPlayerBeta.exe   -   Settings: %localappdata%\PrisonLifeMacro\settings.ini
+    Gui, Add, Button, x594 y780 w102 h24 gCheckUpdatesNow, Check Updates
     Gui, Font, s10 Norm, Segoe UI
 
     Gui, Add, Button, x20 y816 w320 h34 gSaveSettings Default, Save Settings
@@ -1348,6 +1366,7 @@ LoadSettings() {
     global FastGunSwapKey, FastGunSwapOnOffKey, FastGunSwapMode, FastGunSwapEnabled
     global ShuffleReloadKey, ShuffleReloadEnabled
     global GlobalSuspendKey
+    global UpdateLastNotified
 
     IfExist, %SettingsFile%
     {
@@ -1381,6 +1400,8 @@ LoadSettings() {
         IniRead, ShuffleReloadEnabled, %SettingsFile%, ShuffleReload, Enabled, 0
 
         IniRead, GlobalSuspendKey, %SettingsFile%, Global, SuspendKey, %A_Space%
+
+        IniRead, UpdateLastNotified, %SettingsFile%, Update, LastNotified, %A_Space%
     }
     PressureJumpKey       := Trim(PressureJumpKey)
     FreezeKey             := Trim(FreezeKey)
@@ -1391,6 +1412,7 @@ LoadSettings() {
     FastGunSwapOnOffKey := Trim(FastGunSwapOnOffKey)
     ShuffleReloadKey      := Trim(ShuffleReloadKey)
     GlobalSuspendKey      := Trim(GlobalSuspendKey)
+    UpdateLastNotified    := Trim(UpdateLastNotified)
     PressureJumpEnabled := (PressureJumpEnabled = 1 || PressureJumpEnabled = "true")
     FreezeEnabled       := (FreezeEnabled = 1 || FreezeEnabled = "true")
     RotationEnabled     := (RotationEnabled = 1 || RotationEnabled = "true")
@@ -1459,6 +1481,7 @@ BuildTray() {
     Menu, Tray, NoStandard
     try Menu, Tray, Icon, %A_ScriptDir%\PrisonLifeMacro.ico
     Menu, Tray, Add, Open Settings, TrayShowSettings
+    Menu, Tray, Add, Check for Updates..., CheckUpdatesNow
     Menu, Tray, Add, Suspend/Resume All Macros, ToggleGlobalSuspend
     Menu, Tray, Add
     Menu, Tray, Add, Exit, TrayExit
@@ -1474,3 +1497,93 @@ TrayExit:
     DllCall("Winmm\timeEndPeriod", "UInt", 1)
     ExitApp
 return
+
+; ==========================================================================
+;                          Update detector (GitHub)
+; ==========================================================================
+; Fetches the latest release tag from the GitHub API and compares it against
+; ScriptVersion. When a newer release exists, one tray notification is shown
+; per release (the last notified tag is persisted in settings.ini so it never
+; nags twice about the same release). The manual check (GUI button / tray
+; item) also shows a dialog with a direct link to the download page.
+
+UpdateCheckStartup:
+    if (Capturing or FastGunSwapHolding)
+        return   ; don't pause an active macro mid-action - retry on the next periodic tick
+    CheckForUpdates(false)
+return
+
+UpdateCheckPeriodic:
+    if (Capturing or FastGunSwapHolding)
+        return
+    CheckForUpdates(false)
+return
+
+CheckUpdatesNow:
+    CheckForUpdates(true)
+return
+
+CheckForUpdates(Manual) {
+    global ScriptVersion, UpdateApiUrl, UpdateReleasesUrl, SettingsFile
+    global UpdateLastNotified
+
+    latest := ""
+    try {
+        whr := ComObjCreate("WinHttp.WinHttpRequest.5.1")
+        whr.SetTimeouts(5000, 5000, 5000, 8000)
+        whr.Open("GET", UpdateApiUrl, false)
+        whr.SetRequestHeader("User-Agent", "PrisonLifeMacro-Updater")
+        whr.Send()
+        if (whr.Status = 200) {
+            q := Chr(34)
+            body := whr.ResponseText
+            if (RegExMatch(body, "s)" . q . "tag_name" . q . "\s*:\s*" . q . "([^" . q . "]+)" . q, m))
+                latest := m1
+        }
+    } catch e {
+        latest := ""
+    }
+
+    if (latest = "") {
+        if (Manual)
+            MsgBox, 48, Update Check, Couldn't reach GitHub to check for updates.`nCheck your internet connection and try again.
+        return
+    }
+
+    ; Compare numerically by dot-segment ("v" prefix ignored): v1.10 > v1.9.
+    LatestNum := RegExReplace(latest, "^[^0-9]+", "")
+    if (CompareVersions(LatestNum, ScriptVersion) <= 0) {
+        if (Manual)
+            MsgBox, 64, Update Check, You're up to date!`n`nCurrent version : %ScriptVersion%`nLatest release : %latest%
+        return
+    }
+
+    ; New release found - notify once per release, not on every check.
+    if (UpdateLastNotified != latest) {
+        UpdateLastNotified := latest
+        IniWrite, %latest%, %SettingsFile%, Update, LastNotified
+        TrayTip, Prison Life Macro - Update Available!, Version %latest% is out (you're on %ScriptVersion%).`nDownload: %UpdateReleasesUrl%, 20, 1
+    }
+
+    if (Manual) {
+        MsgBox, 4, Update Available, A new version of Prison Life Macro is available!`n`nCurrent version : %ScriptVersion%`nLatest release : %latest%`n`nOpen the download page?
+        IfMsgBox, Yes
+            Run, %UpdateReleasesUrl%
+    }
+}
+
+CompareVersions(v1, v2) {
+    ; Numeric dot-segment comparison: 1 if v1 > v2, -1 if v1 < v2, 0 if equal.
+    p1 := StrSplit(v1, ".")
+    p2 := StrSplit(v2, ".")
+    n := (p1.Length() > p2.Length()) ? p1.Length() : p2.Length()
+    Loop, %n% {
+        a := (A_Index <= p1.Length()) ? (p1[A_Index] + 0) : 0
+        b := (A_Index <= p2.Length()) ? (p2[A_Index] + 0) : 0
+        if (a > b)
+            return 1
+        if (a < b)
+            return -1
+    }
+    return 0
+}
