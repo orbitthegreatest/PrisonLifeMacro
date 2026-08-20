@@ -21,6 +21,7 @@ namespace PrisonLifeMacro
         {
             _engine = engine;
             InitializeComponent();
+            RootGrid.Clip = new RectangleGeometry(new Rect(0, 0, Width, Height), 24, 24);
             LoadLogo();
             PopulateFromSettings();
             WireAnimations();

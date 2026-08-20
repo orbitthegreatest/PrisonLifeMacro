@@ -257,13 +257,10 @@
 
     </Window.Resources>
 
-    <Border x:Name="RootBorder" CornerRadius="22" Background="{StaticResource BgBrush}"
+    <Border x:Name="RootBorder" CornerRadius="24" Background="{StaticResource BgBrush}"
             BorderBrush="#3A2E20" BorderThickness="1">
-        <Border.Effect>
-            <DropShadowEffect x:Name="WinShadow" Color="#000000" Opacity="0.6" BlurRadius="30" ShadowDepth="0"/>
-        </Border.Effect>
 
-        <Grid>
+        <Grid x:Name="RootGrid">
             <Grid.RowDefinitions>
                 <RowDefinition Height="132"/>
                 <RowDefinition Height="*"/>
@@ -555,7 +552,7 @@
                                             Click="SRSetBtn_Click"/>
                                 </StackPanel>
                                 <TextBlock Margin="0,14,0,0" Style="{StaticResource HintText}"
-                                           Text="Reload delay is fixed at 0ms."/>
+                                           Text="Cycles the slots, pressing Reload after each one."/>
                                 <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}"
                                            Text="Slot count and its +/- keys are set under Main Gun Slots above (global)."/>
                             </StackPanel>

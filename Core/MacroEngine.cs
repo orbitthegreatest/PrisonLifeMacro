@@ -30,6 +30,14 @@ namespace PrisonLifeMacro.Core
         private const bool RotationJumpDuring = false;
         private const bool RotationFlickBack = false;
 
+        // Shuffle Reload (fixed): r, 35ms, slot, 4ms, r, 4ms, slot, 4ms, r...
+        private const int ShuffleReloadInitialDelayMs = 35;
+        private const int ShuffleReloadKeyDelayMs = 4;
+
+        // Safety: drop new actions when the queue backs up (injected-event flood).
+        private const int MaxPendingActions = 64;
+        private int _pendingActions;
+
         // Runtime state (read/written from hook + action threads)
         public volatile bool GlobalSuspended;
         public volatile bool FastGunSwapOn;
@@ -46,6 +54,8 @@ namespace PrisonLifeMacro.Core
         private readonly Thread _actionThread;
         private readonly Dictionary<int, bool> _prevDown = new Dictionary<int, bool>();
         private readonly object _prevLock = new object();
+        private readonly HashSet<int> _physDown = new HashSet<int>();
+        private readonly object _physLock = new object();
         private Timer _focusTimer;
         private long _lastSuspendToggleTick;
 
@@ -58,6 +68,7 @@ namespace PrisonLifeMacro.Core
             {
                 foreach (var a in _actions.GetConsumingEnumerable())
                 {
+                    Interlocked.Decrement(ref _pendingActions);
                     try { a(); } catch { }
                 }
             })
@@ -79,9 +90,10 @@ namespace PrisonLifeMacro.Core
             if (SprintHeld)
             {
                 SprintHeld = false;
-                Native.SendKeyUp(0xA0);
+                Native.SendKeyUp(0x10);
             }
             FastGunSwapHolding = false;
+            lock (_physLock) _physDown.Clear();
             _actions.CompleteAdding();
         }
 
@@ -109,6 +121,18 @@ namespace PrisonLifeMacro.Core
         // ------------------------------------------------------------------
         public bool OnKeyEvent(int vk, bool down, bool up, bool extended)
         {
+            // Track the physical state of real keys/buttons (wheel pseudo-VKs excluded).
+            // Injected input never reaches this point (the hook skips it), so this set
+            // is a reliable "is the user physically holding it" flag for Hold-mode loops.
+            if (vk < KeyNames.WheelUpVk)
+            {
+                lock (_physLock)
+                {
+                    if (down) _physDown.Add(vk);
+                    else _physDown.Remove(vk);
+                }
+            }
+
             bool repeat = false;
             lock (_prevLock)
             {
@@ -244,9 +268,21 @@ namespace PrisonLifeMacro.Core
             return false;
         }
 
+        public bool IsPhysDown(int vk)
+        {
+            lock (_physLock) return _physDown.Contains(vk);
+        }
+
         private void Post(Action a)
         {
-            try { _actions.Add(a); } catch { }
+            int n = Interlocked.Increment(ref _pendingActions);
+            if (n > MaxPendingActions)
+            {
+                Interlocked.Decrement(ref _pendingActions);
+                return;
+            }
+            try { _actions.Add(a); }
+            catch { Interlocked.Decrement(ref _pendingActions); }
         }
 
         private void ShowFeedback(string text, int ms = 1500)
@@ -358,12 +394,12 @@ namespace PrisonLifeMacro.Core
             if (SprintHeld)
             {
                 SprintHeld = false;
-                Native.SendKeyUp(0xA0);
+                Native.SendKeyUp(0x10);
             }
             else
             {
                 SprintHeld = true;
-                Native.SendKeyDown(0xA0);
+                Native.SendKeyDown(0x10);
             }
         }
 
@@ -372,7 +408,7 @@ namespace PrisonLifeMacro.Core
             if (SprintHeld && !Native.IsProcessFocused(TargetProcess))
             {
                 SprintHeld = false;
-                Native.SendKeyUp(0xA0);
+                Native.SendKeyUp(0x10);
             }
         }
 
@@ -418,13 +454,13 @@ namespace PrisonLifeMacro.Core
             var slots = BuildActiveSlots();
             if (slots.Count == 0)
                 return;
-            while ((Native.GetAsyncKeyState(keyVk) & 0x8000) != 0)
+            while (IsPhysDown(keyVk))
             {
                 if (!Settings.FastGunSwapEnabled || !FastGunSwapOn || GlobalSuspended)
                     break;
                 foreach (var k in slots)
                 {
-                    if ((Native.GetAsyncKeyState(keyVk) & 0x8000) == 0)
+                    if (!IsPhysDown(keyVk))
                         break;
                     Native.SendKeyTap(k);
                     Thread.Sleep(1);
@@ -472,10 +508,16 @@ namespace PrisonLifeMacro.Core
             if (!ShuffleReloadEnabledOk())
                 return;
             var slots = BuildActiveSlots();
+
+            Native.SendKeyTap(0x52);                 // r - reload the current weapon first
+            Thread.Sleep(ShuffleReloadInitialDelayMs);
+
             foreach (var k in slots)
             {
                 Native.SendKeyTap(k);
-                Native.SendKeyTap(0x52);                 // r
+                Thread.Sleep(ShuffleReloadKeyDelayMs);
+                Native.SendKeyTap(0x52);             // r
+                Thread.Sleep(ShuffleReloadKeyDelayMs);
             }
         }
 

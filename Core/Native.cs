@@ -23,6 +23,7 @@ namespace PrisonLifeMacro.Core
         private struct INPUTUNION
         {
             [FieldOffset(0)] public KEYBDINPUT ki;
+            [FieldOffset(0)] public MOUSEINPUT mi;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -35,12 +36,23 @@ namespace PrisonLifeMacro.Core
             public UIntPtr dwExtraInfo;
         }
 
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MOUSEINPUT
+        {
+            public int dx;
+            public int dy;
+            public uint mouseData;
+            public uint dwFlags;
+            public uint time;
+            public UIntPtr dwExtraInfo;
+        }
+
+        private const uint INPUT_MOUSE = 0;
         private const uint INPUT_KEYBOARD = 1;
         private const uint KEYEVENTF_EXTENDEDKEY = 0x0001;
-        private const uint KEYEVENTF_SCANCODE = 0x0008;
         private const uint KEYEVENTF_KEYUP = 0x0002;
 
-        [DllImport("user32.dll")]
+        [DllImport("user32.dll", SetLastError = true)]
         private static extern uint SendInput(uint nInputs, ref INPUT pInputs, int cbSize);
         [DllImport("user32.dll")]
         private static extern uint MapVirtualKey(uint uCode, uint uMapType);
@@ -78,12 +90,25 @@ namespace PrisonLifeMacro.Core
             ushort scan = (ushort)(MapVirtualKey((uint)vk, MAPVK_VK_TO_VSC) & 0xFF);
             INPUT inp = new INPUT();
             inp.type = INPUT_KEYBOARD;
-            inp.U.ki.wVk = 0;                              // scancode mode
+            inp.U.ki.wVk = (ushort)vk;                       // AHK parity: VK+scan, no SCANCODE flag
             inp.U.ki.wScan = scan;
-            inp.U.ki.dwFlags = KEYEVENTF_SCANCODE | (down ? 0 : KEYEVENTF_KEYUP);
+            inp.U.ki.dwFlags = down ? 0 : KEYEVENTF_KEYUP;
             if (IsExtendedKey(vk))
                 inp.U.ki.dwFlags |= KEYEVENTF_EXTENDEDKEY;
-            SendInput(1, ref inp, Marshal.SizeOf(typeof(INPUT)));
+            if (SendInput(1, ref inp, Marshal.SizeOf(typeof(INPUT))) == 0)
+                LogSendInputFailure("vk=0x" + vk.ToString("X") + (down ? " down" : " up"), Marshal.GetLastWin32Error());
+        }
+
+        private static void LogSendInputFailure(string what, int lastError)
+        {
+            try
+            {
+                string dir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "PrisonLifeMacro");
+                System.IO.Directory.CreateDirectory(dir);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "error.log"),
+                    DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + " [SendInput] " + what + " failed, GetLastError=" + lastError + "\r\n");
+            }
+            catch { }
         }
 
         /// <summary>Press+release a key by VK code. Modifiers currently held are left untouched ("Blind").</summary>
@@ -104,11 +129,21 @@ namespace PrisonLifeMacro.Core
         private const uint MOUSEEVENTF_LEFTUP = 0x0004;
         private const uint MOUSEEVENTF_MOVE = 0x0001;
 
-        /// <summary>Left click at the current cursor position.</summary>
+        /// <summary>Left click at the current cursor position (SendInput, AHK "Click" parity).</summary>
         public static void Click()
         {
-            mouse_event(MOUSEEVENTF_LEFTDOWN, 0, 0, 0, UIntPtr.Zero);
-            mouse_event(MOUSEEVENTF_LEFTUP, 0, 0, 0, UIntPtr.Zero);
+            SendMouseEvent(MOUSEEVENTF_LEFTDOWN, 0);
+            SendMouseEvent(MOUSEEVENTF_LEFTUP, 0);
+        }
+
+        private static void SendMouseEvent(uint flags, uint mouseData)
+        {
+            INPUT inp = new INPUT();
+            inp.type = INPUT_MOUSE;
+            inp.U.mi.dwFlags = flags;
+            inp.U.mi.mouseData = mouseData;
+            if (SendInput(1, ref inp, Marshal.SizeOf(typeof(INPUT))) == 0)
+                LogSendInputFailure("mouse flags=0x" + flags.ToString("X"), Marshal.GetLastWin32Error());
         }
 
         /// <summary>Relative synthetic mouse move (unaffected by physical DPI).</summary>

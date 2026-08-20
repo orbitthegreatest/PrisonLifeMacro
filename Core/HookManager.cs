@@ -26,7 +26,11 @@ namespace PrisonLifeMacro.Core
         private const int WM_MOUSEWHEEL = 0x020A, WM_MOUSEHWHEEL = 0x020E;
 
         private const uint LLKHF_EXTENDED = 0x01;
+        private const uint LLKHF_LOWER_IL_INJECTED = 0x02;
+        private const uint LLKHF_INJECTED = 0x10;
         private const uint LLKHF_UP = 0x80;
+        private const uint LLMHF_INJECTED = 0x01;
+        private const uint LLMHF_LOWER_IL_INJECTED = 0x02;
 
         private delegate IntPtr HookProc(int nCode, IntPtr wParam, IntPtr lParam);
 
@@ -127,6 +131,8 @@ namespace PrisonLifeMacro.Core
                 if (nCode >= 0)
                 {
                     var k = (KBDLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(KBDLLHOOKSTRUCT));
+                    if ((k.flags & (LLKHF_INJECTED | LLKHF_LOWER_IL_INJECTED)) != 0)
+                        return CallNextHookEx(_kHook, nCode, wParam, lParam);
                     int vk = (int)k.vkCode;
                     bool up = (k.flags & LLKHF_UP) != 0;
                     bool extended = (k.flags & LLKHF_EXTENDED) != 0;
@@ -148,21 +154,24 @@ namespace PrisonLifeMacro.Core
                 if (nCode >= 0)
                 {
                 var m = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+                if ((m.flags & (LLMHF_INJECTED | LLMHF_LOWER_IL_INJECTED)) != 0)
+                    return CallNextHookEx(_mHook, nCode, wParam, lParam);
                 int msg = wParam.ToInt32();
                 int vk = 0;
                 bool down = false;
+                bool up = false;
                 bool handled = false;
 
                 switch (msg)
                 {
                     case WM_LBUTTONDOWN: vk = 0x01; down = true; break;
-                    case WM_LBUTTONUP: vk = 0x01; break;
+                    case WM_LBUTTONUP: vk = 0x01; up = true; break;
                     case WM_RBUTTONDOWN: vk = 0x02; down = true; break;
-                    case WM_RBUTTONUP: vk = 0x02; break;
+                    case WM_RBUTTONUP: vk = 0x02; up = true; break;
                     case WM_MBUTTONDOWN: vk = 0x04; down = true; break;
-                    case WM_MBUTTONUP: vk = 0x04; break;
+                    case WM_MBUTTONUP: vk = 0x04; up = true; break;
                     case WM_XBUTTONDOWN: vk = (m.mouseData >> 16) == 1 ? 0x05 : 0x06; down = true; break;
-                    case WM_XBUTTONUP: vk = (m.mouseData >> 16) == 1 ? 0x05 : 0x06; break;
+                    case WM_XBUTTONUP: vk = (m.mouseData >> 16) == 1 ? 0x05 : 0x06; up = true; break;
                     case WM_MOUSEWHEEL:
                         vk = (short)(m.mouseData >> 16) > 0 ? KeyNames.WheelUpVk : KeyNames.WheelDownVk;
                         down = true;
@@ -179,7 +188,7 @@ namespace PrisonLifeMacro.Core
 
                 if (vk != 0)
                 {
-                    handled = _engine.OnKeyEvent(vk, down, false, false);
+                    handled = _engine.OnKeyEvent(vk, down, up, false);
                     if (handled)
                         return (IntPtr)1;
                 }
