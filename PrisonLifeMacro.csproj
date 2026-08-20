@@ -31,7 +31,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="PrisonLifeMacro.ico" CopyToOutputDirectory="PreserveNewest" />
+    <EmbeddedResource Include="PrisonLifeMacro.ico" />
   </ItemGroup>
 
 </Project>

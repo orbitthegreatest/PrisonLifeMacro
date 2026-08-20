@@ -32,24 +32,24 @@ namespace PrisonLifeMacro
         // ------------------------------------------------------------------
         private void LoadLogo()
         {
-            string icoPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "PrisonLifeMacro.ico");
-            if (File.Exists(icoPath))
+            try
             {
-                try
+                var asm = typeof(MainWindow).Assembly;
+                foreach (var name in asm.GetManifestResourceNames())
                 {
-                    using (var ico = new System.Drawing.Icon(icoPath))
-                    using (var bmp = ico.ToBitmap())
-                    using (var ms = new MemoryStream())
+                    if (!name.EndsWith("PrisonLifeMacro.ico", StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    using (var s = asm.GetManifestResourceStream(name))
                     {
-                        bmp.Save(ms, System.Drawing.Imaging.ImageFormat.Png);
-                        ms.Position = 0;
-                        var bs = BitmapFrame.Create(ms, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
-                        bs.Freeze();
-                        LogoImage.Source = bs;
+                        var decoder = new IconBitmapDecoder(s, BitmapCreateOptions.None, BitmapCacheOption.OnLoad);
+                        var frame = decoder.Frames[0];
+                        frame.Freeze();
+                        LogoImage.Source = frame;
                     }
+                    break;
                 }
-                catch { }
             }
+            catch { }
             VersionText.Text = "v" + UpdateChecker.ScriptVersion;
         }
 

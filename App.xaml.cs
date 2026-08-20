@@ -138,15 +138,27 @@ namespace PrisonLifeMacro
 
         private static Icon LoadIcon()
         {
-            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "PrisonLifeMacro.ico");
             try
             {
-                return File.Exists(path) ? new Icon(path) : SystemIcons.Application;
+                using (var s = GetIconStream())
+                    return s != null ? new Icon(s) : SystemIcons.Application;
             }
             catch
             {
                 return SystemIcons.Application;
             }
+        }
+
+        /// <summary>The logo ico is embedded inside the exe - no external file needed.</summary>
+        private static System.IO.Stream GetIconStream()
+        {
+            var asm = typeof(App).Assembly;
+            foreach (var name in asm.GetManifestResourceNames())
+            {
+                if (name.EndsWith("PrisonLifeMacro.ico", StringComparison.OrdinalIgnoreCase))
+                    return asm.GetManifestResourceStream(name);
+            }
+            return null;
         }
 
         public void CheckForUpdates(bool manual)
