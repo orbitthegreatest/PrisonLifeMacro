@@ -3,7 +3,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
-using System.Windows.Media.Effects;
 using System.Windows.Threading;
 
 namespace PrisonLifeMacro.Core
@@ -46,7 +45,6 @@ namespace PrisonLifeMacro.Core
                 BorderBrush = new SolidColorBrush(Color.FromRgb(0x4A, 0x39, 0x22)),
                 BorderThickness = new Thickness(1),
                 Padding = new Thickness(16, 10, 16, 10),
-                Effect = new DropShadowEffect { BlurRadius = 16, ShadowDepth = 0, Opacity = 0.55, Color = Colors.Black },
             };
             _text = new TextBlock
             {
