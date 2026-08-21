@@ -13,7 +13,7 @@ namespace PrisonLifeMacro.Core
     /// </summary>
     public sealed class UpdateChecker
     {
-        public const string ScriptVersion = "4.0.0";
+        public const string ScriptVersion = "4.0.5";
         private const string Repo = "orbitthegreatest/PrisonLifeMacro";
         private const string ApiUrl = "https://api.github.com/repos/" + Repo + "/releases/latest";
         public const string ReleasesUrl = "https://github.com/" + Repo + "/releases/latest";

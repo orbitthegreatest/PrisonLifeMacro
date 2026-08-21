@@ -289,7 +289,7 @@
                 <StackPanel Grid.Column="1" Margin="18,20,0,0">
                     <TextBlock Text="PRISON LIFE MACRO SUITE" FontSize="21" FontWeight="Bold"
                                Foreground="{StaticResource AccentBrightBrush}"/>
-                    <TextBlock x:Name="VersionText" Text="v4.0.0" FontSize="11" FontWeight="SemiBold"
+                    <TextBlock x:Name="VersionText" Text="v4.0.5" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource DimBrush}" Margin="0,3,0,0"/>
                     <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload"
                                FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,9,0,0"/>
