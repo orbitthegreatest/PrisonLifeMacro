@@ -388,15 +388,14 @@ namespace PrisonLifeMacro
         {
             DotMinScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.0, 0.82, TimeSpan.FromMilliseconds(90)));
             DotMinScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.0, 0.82, TimeSpan.FromMilliseconds(90)));
-            Hide();
+            WindowState = WindowState.Minimized;          // yellow: minimize to taskbar
         }
 
         private void DotClose_Click(object sender, MouseButtonEventArgs e)
         {
             DotCloseScale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.0, 0.82, TimeSpan.FromMilliseconds(90)));
             DotCloseScale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.0, 0.82, TimeSpan.FromMilliseconds(90)));
-            ExitRequested = true;
-            Close();
+            Hide();                                        // red: minimize to tray
         }
 
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
