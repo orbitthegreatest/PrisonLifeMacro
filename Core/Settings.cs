@@ -14,7 +14,6 @@ namespace PrisonLifeMacro.Core
         public static string SettingsFile;
 
         // General
-        public static double DPI = 800;
         public static double CS = 0.123;
         public static double FPS = 60;
         public static bool StartMinimized;
@@ -22,6 +21,16 @@ namespace PrisonLifeMacro.Core
         // Pressure Jump
         public static string PressureJumpKey = "";
         public static bool PressureJumpEnabled;
+        public static bool PressureJumpFreeze;
+
+        // Clip
+        public static string ClipKey = "";
+        public static int ClipDelayMs = 6;
+        public static bool ClipEnabled;
+
+        // Lag Switch
+        public static string LagSwitchKey = "";
+        public static bool LagSwitchEnabled;
 
         // Freeze
         public static string FreezeKey = "";
@@ -83,13 +92,22 @@ namespace PrisonLifeMacro.Core
         public static void Load()
         {
             InitPaths();
-            DPI = ReadDouble("General", "DPI", 800);
             CS = ReadDouble("General", "Sensitivity", 0.123);
             FPS = ReadDouble("General", "FPS", 60);
             StartMinimized = ReadBool("General", "StartMinimized", false);
 
             PressureJumpKey = Trim(IniRead("PressureJump", "Hotkey", ""));
             PressureJumpEnabled = ReadBool("PressureJump", "Enabled", false);
+            PressureJumpFreeze = ReadBool("PressureJump", "Freeze", false);
+
+            ClipKey = Trim(IniRead("Clip", "Hotkey", ""));
+            ClipDelayMs = (int)Math.Round(ReadDouble("Clip", "DelayMs", 6));
+            if (ClipDelayMs < 0) ClipDelayMs = 0;
+            if (ClipDelayMs > 10000) ClipDelayMs = 10000;
+            ClipEnabled = ReadBool("Clip", "Enabled", false);
+
+            LagSwitchKey = Trim(IniRead("LagSwitch", "Hotkey", ""));
+            LagSwitchEnabled = ReadBool("LagSwitch", "Enabled", false);
 
             FreezeKey = Trim(IniRead("Freeze", "Hotkey", ""));
             FreezeMode = Trim(IniRead("Freeze", "Mode", "Toggle"));
@@ -125,13 +143,20 @@ namespace PrisonLifeMacro.Core
         public static void Save()
         {
             InitPaths();
-            IniWrite("General", "DPI", DPI.ToString("0.####"));
             IniWrite("General", "Sensitivity", CS.ToString("0.######"));
             IniWrite("General", "FPS", FPS.ToString("0.####"));
             IniWrite("General", "StartMinimized", StartMinimized ? "1" : "0");
 
             IniWrite("PressureJump", "Hotkey", PressureJumpKey);
             IniWrite("PressureJump", "Enabled", PressureJumpEnabled ? "1" : "0");
+            IniWrite("PressureJump", "Freeze", PressureJumpFreeze ? "1" : "0");
+
+            IniWrite("Clip", "Hotkey", ClipKey);
+            IniWrite("Clip", "DelayMs", ClipDelayMs.ToString());
+            IniWrite("Clip", "Enabled", ClipEnabled ? "1" : "0");
+
+            IniWrite("LagSwitch", "Hotkey", LagSwitchKey);
+            IniWrite("LagSwitch", "Enabled", LagSwitchEnabled ? "1" : "0");
 
             IniWrite("Freeze", "Hotkey", FreezeKey);
             IniWrite("Freeze", "Mode", FreezeMode);

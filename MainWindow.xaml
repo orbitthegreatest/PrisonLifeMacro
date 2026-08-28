@@ -291,7 +291,7 @@
                                Foreground="{StaticResource AccentBrightBrush}"/>
                     <TextBlock x:Name="VersionText" Text="v4.0.5" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource DimBrush}" Margin="0,3,0,0"/>
-                    <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload"
+                    <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload  |  Clip  |  Lag Switch"
                                FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,9,0,0"/>
                     <TextBlock Text="Shift-tap sprint toggle   -   Global suspend key   -   One-click keybind captures"
                                FontSize="10.5" Foreground="{StaticResource DimBrush}" Margin="0,4,0,0"/>
@@ -354,22 +354,16 @@
                                     <ColumnDefinition Width="118"/>
                                     <ColumnDefinition Width="22"/>
                                     <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="118"/>
-                                    <ColumnDefinition Width="22"/>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Sensitivity:" Style="{StaticResource InputLabel}"/>
                                 <TextBox Grid.Column="1" x:Name="CSInput" Style="{StaticResource DarkTextBox}"/>
                                 <TextBlock Grid.Column="2"/>
-                                <TextBlock Grid.Column="3" Text="Mouse DPI:" Style="{StaticResource InputLabel}"/>
-                                <TextBox Grid.Column="4" x:Name="DPIInput" Style="{StaticResource DarkTextBox}"/>
-                                <TextBlock Grid.Column="5"/>
-                                <TextBlock Grid.Column="6" Text="Roblox FPS:" Style="{StaticResource InputLabel}"/>
-                                <TextBox Grid.Column="7" x:Name="FPSInput" Style="{StaticResource DarkTextBox}" Width="60"/>
+                                <TextBlock Grid.Column="3" Text="Roblox FPS:" Style="{StaticResource InputLabel}"/>
+                                <TextBox Grid.Column="4" x:Name="FPSInput" Style="{StaticResource DarkTextBox}" Width="60"/>
                             </Grid>
                             <TextBlock Margin="0,10,0,0" Style="{StaticResource HintText}"
-                                       Text="Shared by Pressure Jump and Rotation - sensitivity drives the spin/flick pixel math. DPI and FPS are stored for reference."/>
+                                       Text="Shared by Pressure Jump and Rotation - sensitivity drives the spin/flick pixel math. FPS is stored for reference."/>
                         </StackPanel>
                     </Border>
 
@@ -436,7 +430,7 @@
 
                     <!-- TABS -->
                     <TabControl x:Name="Tabs" Style="{StaticResource DarkTabControl}"
-                                Margin="0,12,0,0" Height="302">
+                                Margin="0,12,0,0" Height="356">
 
                         <!-- Pressure Jump -->
                         <TabItem Header="Pressure Jump" Style="{StaticResource DarkTabItem}">
@@ -450,8 +444,54 @@
                                 <Button x:Name="PJSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
                                         HorizontalAlignment="Left" Content="Click, then press key/button for Pressure Jump..."
                                         Click="PJSetBtn_Click"/>
+                                <CheckBox x:Name="PJFreezeCB" Style="{StaticResource DarkCheckBox}" Margin="0,16,0,0"
+                                          Content="Freeze during Pressure Jump"/>
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource HintText}"
+                                           Text="Freezes (suspends) the Roblox process right after the jump and releases it after the spin. Works on its own - Freeze does not need to be enabled."/>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}"
                                            Text="Hold-to-run jump. Spins the camera using the shared Sensitivity value."/>
+                            </StackPanel>
+                        </TabItem>
+
+                        <!-- Clip -->
+                        <TabItem Header="Clip" Style="{StaticResource DarkTabItem}">
+                            <StackPanel>
+                                <CheckBox x:Name="ClipEnabledCB" Style="{StaticResource DarkCheckBox}"
+                                          Content="Enable Clip"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                    <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
+                                    <TextBlock x:Name="ClipHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                </StackPanel>
+                                <Button x:Name="ClipSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
+                                        HorizontalAlignment="Left" Content="Click, then press key/button for Clip..."
+                                        Click="ClipSetBtn_Click"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
+                                    <TextBlock Text="Delay (ms):" Style="{StaticResource InputLabel}" Width="70"/>
+                                    <TextBox x:Name="ClipDelayInput" Style="{StaticResource DarkTextBox}" Width="70"/>
+                                </StackPanel>
+                                <TextBlock Margin="0,10,0,0" Style="{StaticResource HintText}"
+                                           Text="Walk against a wall and press the keybind to glitch. Holds W until the macro ends."/>
+                                <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}"
+                                           Text="Delay is the time between the crouch tap and the freeze. WARNING: changing this value can break the macro - only adjust if you know what you're doing."/>
+                            </StackPanel>
+                        </TabItem>
+
+                        <!-- Lag Switch -->
+                        <TabItem Header="Lag Switch" Style="{StaticResource DarkTabItem}">
+                            <StackPanel>
+                                <CheckBox x:Name="LagEnabledCB" Style="{StaticResource DarkCheckBox}"
+                                          Content="Enable Lag Switch"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                    <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
+                                    <TextBlock x:Name="LagHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                </StackPanel>
+                                <Button x:Name="LagSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
+                                        HorizontalAlignment="Left" Content="Click, then press key/button for Lag Switch..."
+                                        Click="LagSetBtn_Click"/>
+                                <TextBlock Margin="0,16,0,0" Style="{StaticResource HintText}"
+                                           Text="Toggle that blocks Roblox network packets (WinDivert) to lag the server. Runs at Admin rights."/>
+                                <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}"
+                                           Text="Drivers (SMCWinDivert.dll / .sys) are downloaded into %localappdata%\PrisonLifeMacro on first launch."/>
                             </StackPanel>
                         </TabItem>
 

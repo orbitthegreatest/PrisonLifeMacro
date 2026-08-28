@@ -229,5 +229,84 @@ namespace PrisonLifeMacro.Core
                 finally { p.Dispose(); }
             }
         }
+
+        // ---------------- WinDivert (lag switch) ----------------
+        [StructLayout(LayoutKind.Sequential)]
+        public struct WINDIVERT_ADDRESS
+        {
+            public ulong Timestamp;
+            public uint Flags;
+            public uint Reserved2;
+            public ulong Reserved3;
+        }
+
+        [DllImport("kernel32.dll", SetLastError = true, CharSet = CharSet.Ansi)]
+        private static extern IntPtr LoadLibrary(string lpFileName);
+        [DllImport("kernel32.dll", SetLastError = true)]
+        private static extern IntPtr GetProcAddress(IntPtr hModule, string lpProcName);
+
+        private delegate IntPtr WinDivertOpenDelegate(string filter, int layer, short priority, ulong flags);
+        private delegate bool WinDivertRecvDelegate(IntPtr handle, byte[] packet, uint packetLen, ref uint recvLen, ref WINDIVERT_ADDRESS addr);
+        private delegate bool WinDivertSendDelegate(IntPtr handle, byte[] packet, uint packetLen, ref uint writeLen, ref WINDIVERT_ADDRESS addr);
+        private delegate bool WinDivertCloseDelegate(IntPtr handle);
+
+        private static IntPtr _windivertModule;
+        private static WinDivertOpenDelegate _wdOpen;
+        private static WinDivertRecvDelegate _wdRecv;
+        private static WinDivertSendDelegate _wdSend;
+        private static WinDivertCloseDelegate _wdClose;
+
+        /// <summary>Loads the SMCWinDivert.dll from the settings dir and binds the entry points.</summary>
+        public static bool LoadWinDivert(string dllPath)
+        {
+            if (_windivertModule != IntPtr.Zero)
+                return true;
+            if (!System.IO.File.Exists(dllPath))
+                return false;
+            IntPtr h = LoadLibrary(dllPath);
+            if (h == IntPtr.Zero)
+                return false;
+            var open = GetProcAddress(h, "WinDivertOpen");
+            var recv = GetProcAddress(h, "WinDivertRecv");
+            var send = GetProcAddress(h, "WinDivertSend");
+            var close = GetProcAddress(h, "WinDivertClose");
+            if (open == IntPtr.Zero || recv == IntPtr.Zero || send == IntPtr.Zero || close == IntPtr.Zero)
+            {
+                _windivertModule = IntPtr.Zero;
+                return false;
+            }
+            _windivertModule = h;
+            _wdOpen = (WinDivertOpenDelegate)Marshal.GetDelegateForFunctionPointer(open, typeof(WinDivertOpenDelegate));
+            _wdRecv = (WinDivertRecvDelegate)Marshal.GetDelegateForFunctionPointer(recv, typeof(WinDivertRecvDelegate));
+            _wdSend = (WinDivertSendDelegate)Marshal.GetDelegateForFunctionPointer(send, typeof(WinDivertSendDelegate));
+            _wdClose = (WinDivertCloseDelegate)Marshal.GetDelegateForFunctionPointer(close, typeof(WinDivertCloseDelegate));
+            return true;
+        }
+
+        public static IntPtr WinDivertOpen(string filter)
+        {
+            if (_wdOpen == null) return IntPtr.Zero;
+            return _wdOpen(filter, 0, 0, 0);
+        }
+
+        public static bool WinDivertRecv(IntPtr handle, byte[] packet, uint packetLen, ref uint recvLen, ref WINDIVERT_ADDRESS addr)
+        {
+            if (_wdRecv == null) return false;
+            return _wdRecv(handle, packet, packetLen, ref recvLen, ref addr);
+        }
+
+        public static bool WinDivertSend(IntPtr handle, byte[] packet, uint packetLen, ref uint writeLen, ref WINDIVERT_ADDRESS addr)
+        {
+            if (_wdSend == null) return false;
+            return _wdSend(handle, packet, packetLen, ref writeLen, ref addr);
+        }
+
+        public static bool WinDivertClose(IntPtr handle)
+        {
+            if (_wdClose == null || handle == IntPtr.Zero) return true;
+            return _wdClose(handle);
+        }
+
+        public const int WinDivertInvalidHandleValue = -1;
     }
 }

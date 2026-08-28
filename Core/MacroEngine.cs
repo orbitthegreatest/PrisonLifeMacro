@@ -30,6 +30,13 @@ namespace PrisonLifeMacro.Core
         private const bool RotationJumpDuring = false;
         private const bool RotationFlickBack = false;
 
+        // Pressure Jump (PressureJumpV2.ahk parity). The AHK uses the Roblox sensitivity
+        // that you set manually as "CS" and spins with Spin := Round(180 * 2.5 / CS),
+        // repeated 20 times with an 8ms sleep. That CS is the app's top-of-UI "Sensitivity"
+        // box (Settings.CS); at CS 0.36 this equals the stock 1250px per spin.
+        private const int PressureJumpSpins = 20;
+        private const int PressureJumpSleepMs = 8;
+
         // Shuffle Reload (fixed): r, 35ms, slot, 4ms, r, 4ms, slot, 4ms, r...
         private const int ShuffleReloadInitialDelayMs = 35;
         private const int ShuffleReloadKeyDelayMs = 4;
@@ -47,8 +54,11 @@ namespace PrisonLifeMacro.Core
         public volatile bool Capturing;
         public string CaptureTarget;
 
+        public readonly LagSwitch LagSwitch;
+
         public int X = 7200;
         public int RotX = 2977;
+        public int PJumpX = 1250;   // Freeze branch: AHK Spin := Round(180 * 2.5 / CS)
 
         private readonly BlockingCollection<Action> _actions = new BlockingCollection<Action>();
         private readonly Thread _actionThread;
@@ -64,6 +74,7 @@ namespace PrisonLifeMacro.Core
 
         public MacroEngine()
         {
+            LagSwitch = new LagSwitch();
             _actionThread = new Thread(() =>
             {
                 foreach (var a in _actions.GetConsumingEnumerable())
@@ -93,6 +104,7 @@ namespace PrisonLifeMacro.Core
                 Native.SendKeyUp(0x10);
             }
             FastGunSwapHolding = false;
+            LagSwitch.Stop();
             lock (_physLock) _physDown.Clear();
             _actions.CompleteAdding();
         }
@@ -102,6 +114,7 @@ namespace PrisonLifeMacro.Core
             double cs = Settings.CS > 0 ? Settings.CS : 0.01;
             X = (int)Math.Round((Spin * BaseCS) / cs);
             RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs));
+            PJumpX = (int)Math.Round(180.0 * 2.5 / cs);   // AHK: Spin := Round(180 * 2.5 / CS)
         }
 
         public void BeginCapture(string target)
@@ -207,6 +220,22 @@ namespace PrisonLifeMacro.Core
                 return true;
             }
 
+            // ---- Clip (consumed) ----
+            if (Settings.ClipEnabled && !string.IsNullOrEmpty(Settings.ClipKey) &&
+                vk == KeyNames.NameToVk(Settings.ClipKey))
+            {
+                if (down && !repeat) Post(ClipAction);
+                return true;
+            }
+
+            // ---- Lag Switch (consumed) ----
+            if (Settings.LagSwitchEnabled && !string.IsNullOrEmpty(Settings.LagSwitchKey) &&
+                vk == KeyNames.NameToVk(Settings.LagSwitchKey))
+            {
+                if (down && !repeat) Post(LagSwitchToggle);
+                return true;
+            }
+
             // ---- Rotation (pass-through) ----
             if (Settings.RotationEnabled && !string.IsNullOrEmpty(Settings.RotationKey) &&
                 vk == KeyNames.NameToVk(Settings.RotationKey))
@@ -299,18 +328,54 @@ namespace PrisonLifeMacro.Core
         // ------------------------------------------------------------------
         private void PressureJumpAction()
         {
-            Native.SendKeyTap(0x43);                       // c
-            Thread.Sleep(6);
-            Native.SendKeyDown(0x20);                      // Space down
-            Thread.Sleep(50);
-            Native.SendKeyUp(0x20);                        // Space up
-            Thread.Sleep(4);
-
-            long start = Environment.TickCount;
-            while (Environment.TickCount - start <= 200)
+            bool freeze = Settings.PressureJumpFreeze;
+            if (freeze)
             {
-                Native.MoveMouse(X, 0);
+                // AHK PressureJumpV2 logic (with freeze): c, space tap (Space down 20ms /
+                // space up), freeze ~100ms at the same point the AHK holds middle-mouse,
+                // 14ms breath, then 20 rapid spins of 1250-ish at 8ms.
+                Native.SendKeyTap(0x43);                       // c
+                Native.SendKeyDown(0x20);                      // Space down
+                Thread.Sleep(20);                              // AHK: Sleep(20) when frozen
+                Native.SendKeyUp(0x20);                        // Space up
+
+                bool frozenHere = false;
+                if (!Frozen)
+                {
+                    frozenHere = true;
+                    Frozen = true;
+                    Native.SuspendProcessByName(TargetProcess);
+                }
+                Thread.Sleep(100);                             // AHK: MMB down, Sleep(100), MMB up
+                if (frozenHere)
+                {
+                    Frozen = false;
+                    Native.ResumeProcessByName(TargetProcess);
+                }
+
+                Thread.Sleep(14);                              // AHK: Sleep(14) before the spin
+                for (int i = 0; i < PressureJumpSpins; i++)    // AHK: Loop Spins (20)
+                {
+                    Native.MoveMouse(PJumpX, 0);               // AHK: mouse_event(MOVE, Spin, 0)
+                    Thread.Sleep(PressureJumpSleepMs);         // AHK: Sleep(8)
+                }
+            }
+            else
+            {
+                // Original macro logic (no freeze).
+                Native.SendKeyTap(0x43);                       // c
+                Thread.Sleep(6);
+                Native.SendKeyDown(0x20);                      // Space down
+                Thread.Sleep(50);
+                Native.SendKeyUp(0x20);                        // Space up
                 Thread.Sleep(4);
+
+                long start = Environment.TickCount;
+                while (Environment.TickCount - start <= 200)
+                {
+                    Native.MoveMouse(X, 0);
+                    Thread.Sleep(4);
+                }
             }
         }
 
@@ -347,6 +412,37 @@ namespace PrisonLifeMacro.Core
                 Frozen = false;
                 Native.ResumeProcessByName(TargetProcess);
             }
+        }
+
+        // ------------------------------------------------------------------
+        // Clip (ported from Clip.ahk: c, delay, freeze, unfreeze, hold W)
+        // ------------------------------------------------------------------
+        private void ClipAction()
+        {
+            int delay = Settings.ClipDelayMs;
+            if (delay < 0) delay = 0;
+
+            Native.SendKeyDown(0x57);                    // w down - hold for the whole macro
+            try
+            {
+                Native.SendKeyTap(0x43);                 // c
+                Thread.Sleep(delay);                     // personalisable, can break the macro if wrong
+                Native.SuspendProcessByName(TargetProcess);   // MButton down = freeze
+                Thread.Sleep(750);
+                Native.ResumeProcessByName(TargetProcess);    // MButton up = unfreeze
+            }
+            finally
+            {
+                Native.SendKeyUp(0x57);                  // w up at the very end
+            }
+        }
+
+        // ------------------------------------------------------------------
+        // Lag Switch (toggle activated only while Roblox is focused)
+        // ------------------------------------------------------------------
+        private void LagSwitchToggle()
+        {
+            LagSwitch.SetActive(!LagSwitch.Active);
         }
 
         // ------------------------------------------------------------------
@@ -556,6 +652,7 @@ namespace PrisonLifeMacro.Core
                     Native.ResumeProcessByName(TargetProcess);
                 }
                 FastGunSwapHolding = false;
+                LagSwitch.SetActive(false);
                 string key = string.IsNullOrEmpty(Settings.GlobalSuspendKey) ? "the suspend key" : Settings.GlobalSuspendKey;
                 ShowFeedback("ALL MACROS SUSPENDED - press " + key + " to resume");
             }

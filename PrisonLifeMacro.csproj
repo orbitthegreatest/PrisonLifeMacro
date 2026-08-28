@@ -17,9 +17,9 @@
     <DebugSymbols>false</DebugSymbols>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Product>Prison Life Macro Suite</Product>
-    <Version>4.0.5</Version>
-    <AssemblyVersion>4.0.5.0</AssemblyVersion>
-    <FileVersion>4.0.5.0</FileVersion>
+    <Version>4.5.0</Version>
+    <AssemblyVersion>4.5.0.0</AssemblyVersion>
+    <FileVersion>4.5.0.0</FileVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -32,6 +32,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="PrisonLifeMacro.ico" />
+    <EmbeddedResource Include="windivert\SMCWinDivert.dll" LogicalName="SMCDriver.dll" />
+    <EmbeddedResource Include="windivert\SMCWinDivert64.sys" LogicalName="SMCDriver.sys" />
   </ItemGroup>
 
 </Project>

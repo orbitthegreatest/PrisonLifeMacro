@@ -57,13 +57,20 @@ namespace PrisonLifeMacro
         private void PopulateFromSettings()
         {
             CSInput.Text = Settings.CS.ToString("0.######");
-            DPIInput.Text = Settings.DPI.ToString("0.####");
             FPSInput.Text = Settings.FPS.ToString("0.####");
             GunSlotCountInput.Text = Settings.GunSlotCount.ToString();
             StartMinCB.IsChecked = Settings.StartMinimized;
 
             PJEnabledCB.IsChecked = Settings.PressureJumpEnabled;
             PJHotkeyDisplay.Text = KeyDisplay(Settings.PressureJumpKey);
+            PJFreezeCB.IsChecked = Settings.PressureJumpFreeze;
+
+            ClipEnabledCB.IsChecked = Settings.ClipEnabled;
+            ClipHotkeyDisplay.Text = KeyDisplay(Settings.ClipKey);
+            ClipDelayInput.Text = Settings.ClipDelayMs.ToString();
+
+            LagEnabledCB.IsChecked = Settings.LagSwitchEnabled;
+            LagHotkeyDisplay.Text = KeyDisplay(Settings.LagSwitchKey);
 
             FreezeEnabledCB.IsChecked = Settings.FreezeEnabled;
             FreezeHotkeyDisplay.Text = KeyDisplay(Settings.FreezeKey);
@@ -148,6 +155,8 @@ namespace PrisonLifeMacro
             AttachButtonHover(BtnCheckUpdates, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(BtnAboutUpdates, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(PJSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(ClipSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(LagSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FreezeSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(RotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FGSSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
@@ -240,6 +249,8 @@ namespace PrisonLifeMacro
             switch (target)
             {
                 case "PJ": Settings.PressureJumpKey = name; break;
+                case "Clip": Settings.ClipKey = name; break;
+                case "LagSwitch": Settings.LagSwitchKey = name; break;
                 case "Freeze": Settings.FreezeKey = name; break;
                 case "Rotation": Settings.RotationKey = name; break;
                 case "FGS": Settings.FastGunSwapKey = name; break;
@@ -255,6 +266,8 @@ namespace PrisonLifeMacro
         private void RefreshDisplays()
         {
             PJHotkeyDisplay.Text = KeyDisplay(Settings.PressureJumpKey);
+            ClipHotkeyDisplay.Text = KeyDisplay(Settings.ClipKey);
+            LagHotkeyDisplay.Text = KeyDisplay(Settings.LagSwitchKey);
             FreezeHotkeyDisplay.Text = KeyDisplay(Settings.FreezeKey);
             RotHotkeyDisplay.Text = KeyDisplay(Settings.RotationKey);
             FGSHotkeyDisplay.Text = KeyDisplay(Settings.FastGunSwapKey);
@@ -269,6 +282,8 @@ namespace PrisonLifeMacro
         // Capture buttons
         // ------------------------------------------------------------------
         private void PJSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("PJ", PJSetBtn, "Click, then press key/button for Pressure Jump...");
+        private void ClipSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Clip", ClipSetBtn, "Click, then press key/button for Clip...");
+        private void LagSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("LagSwitch", LagSetBtn, "Click, then press key/button for Lag Switch...");
         private void FreezeSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Freeze", FreezeSetBtn, "Click, then press key/button for Freeze...");
         private void RotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Rotation", RotSetBtn, "Click, then press key/button for Rotation...");
         private void FGSSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("FGS", FGSSetBtn, "Click, then press key/button for Fast Gun Swap Trigger...");
@@ -283,12 +298,11 @@ namespace PrisonLifeMacro
         // ------------------------------------------------------------------
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
-            double dpi, cs, fps;
-            if (!double.TryParse(DPIInput.Text.Trim().Replace(',', '.'), out dpi) || dpi <= 0 ||
-                !double.TryParse(CSInput.Text.Trim().Replace(',', '.'), out cs) || cs <= 0 ||
+            double cs, fps;
+            if (!double.TryParse(CSInput.Text.Trim().Replace(',', '.'), out cs) || cs <= 0 ||
                 !double.TryParse(FPSInput.Text.Trim().Replace(',', '.'), out fps) || fps <= 0)
             {
-                MessageBox.Show(this, "Please enter valid non-zero numbers for Roblox Sensitivity, Mouse DPI, and Roblox FPS.",
+                MessageBox.Show(this, "Please enter valid non-zero numbers for Roblox Sensitivity and Roblox FPS.",
                     "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
@@ -299,12 +313,22 @@ namespace PrisonLifeMacro
                     "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            int clipDelay;
+            if (!int.TryParse(ClipDelayInput.Text.Trim(), out clipDelay) || clipDelay < 0 || clipDelay > 10000)
+            {
+                MessageBox.Show(this, "Clip Delay must be a whole number of milliseconds between 0 and 10000.",
+                    "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
-            Settings.DPI = dpi;
             Settings.CS = cs;
             Settings.FPS = fps;
             Settings.GunSlotCount = slots;
             Settings.PressureJumpEnabled = PJEnabledCB.IsChecked == true;
+            Settings.PressureJumpFreeze = PJFreezeCB.IsChecked == true;
+            Settings.ClipEnabled = ClipEnabledCB.IsChecked == true;
+            Settings.ClipDelayMs = clipDelay;
+            Settings.LagSwitchEnabled = LagEnabledCB.IsChecked == true;
             Settings.FreezeEnabled = FreezeEnabledCB.IsChecked == true;
             Settings.FreezeMode = FreezeModeHold.IsChecked == true ? "Hold" : "Toggle";
             Settings.RotationEnabled = RotEnabledCB.IsChecked == true;
@@ -320,6 +344,10 @@ namespace PrisonLifeMacro
             string warnings = "";
             if (Settings.PressureJumpEnabled && string.IsNullOrEmpty(Settings.PressureJumpKey))
                 warnings += "- Pressure Jump is enabled but has no keybind set.\n";
+            if (Settings.ClipEnabled && string.IsNullOrEmpty(Settings.ClipKey))
+                warnings += "- Clip is enabled but has no keybind set.\n";
+            if (Settings.LagSwitchEnabled && string.IsNullOrEmpty(Settings.LagSwitchKey))
+                warnings += "- Lag Switch is enabled but has no keybind set.\n";
             if (Settings.FreezeEnabled && string.IsNullOrEmpty(Settings.FreezeKey))
                 warnings += "- Freeze is enabled but has no keybind set.\n";
             if (Settings.RotationEnabled && string.IsNullOrEmpty(Settings.RotationKey))

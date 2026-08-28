@@ -57,6 +57,9 @@ namespace PrisonLifeMacro
 
             Settings.Load();
 
+            // First launch: download the WinDivert drivers into the settings folder.
+            DriverInstaller.EnsureInstalled();
+
             _engine = new MacroEngine();
             _engine.Feedback += text => Dispatcher.BeginInvoke(new Action(() =>
             {
@@ -64,6 +67,8 @@ namespace PrisonLifeMacro
                 if (_tray != null)
                     _tray.ShowBalloonTip(3000, "Prison Life Macro", text, ToolTipIcon.Info);
             }));
+
+            _engine.LagSwitch.Start();
 
             _hooks = new HookManager(_engine);
             _hooks.Start();
