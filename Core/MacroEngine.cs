@@ -30,12 +30,9 @@ namespace PrisonLifeMacro.Core
         private const bool RotationJumpDuring = false;
         private const bool RotationFlickBack = false;
 
-        // Pressure Jump (PressureJumpV2.ahk parity). The AHK uses the Roblox sensitivity
-        // that you set manually as "CS" and spins with Spin := Round(180 * 2.5 / CS),
-        // repeated 20 times with an 8ms sleep. That CS is the app's top-of-UI "Sensitivity"
-        // box (Settings.CS); at CS 0.36 this equals the stock 1250px per spin.
-        private const int PressureJumpSpins = 20;
-        private const int PressureJumpSleepMs = 8;
+        // Pressure Jump. The freeze branch uses the Speedglitch-style spin from
+        // Spencer-Macro-Utilities: per-move pixel is sensitivity-driven and it alternates
+        // +pix / -pix once per Roblox frame (see RecalculatePixels / FrameDelayMs).
 
         // Shuffle Reload (fixed): r, 35ms, slot, 4ms, r, 4ms, slot, 4ms, r...
         private const int ShuffleReloadInitialDelayMs = 35;
@@ -58,7 +55,7 @@ namespace PrisonLifeMacro.Core
 
         public int X = 7200;
         public int RotX = 2977;
-        public int PJumpX = 1250;   // Freeze branch: AHK Spin := Round(180 * 2.5 / CS)
+        public int PJumpPix = 959;  // Freeze branch: Speedglitch per-move pixel (360/sens)
 
         private readonly BlockingCollection<Action> _actions = new BlockingCollection<Action>();
         private readonly Thread _actionThread;
@@ -114,7 +111,16 @@ namespace PrisonLifeMacro.Core
             double cs = Settings.CS > 0 ? Settings.CS : 0.01;
             X = (int)Math.Round((Spin * BaseCS) / cs);
             RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs));
-            PJumpX = (int)Math.Round(180.0 * 2.5 / cs);   // AHK: Spin := Round(180 * 2.5 / CS)
+            // Speedglitch parity (Spencer-Macro-Utilities app_ui.cpp):
+            //   speedBase = 360;  Pix = Round((360 / sens) * (359/360) * (359/360))
+            PJumpPix = (int)Math.Round((360.0 / cs) * (359.0 / 360.0) * (359.0 / 360.0));
+        }
+
+        // Speedglitch parity (macro_runtime.cpp FrameDelaysForFps): one Roblox frame in ms.
+        private static int FrameDelayMs()
+        {
+            double fps = Settings.FPS > 0 ? Settings.FPS : 1.0;
+            return Math.Max(1, (int)(1000.0 / fps));
         }
 
         public void BeginCapture(string target)
@@ -332,8 +338,8 @@ namespace PrisonLifeMacro.Core
             if (freeze)
             {
                 // AHK PressureJumpV2 logic (with freeze): c, space tap (Space down 20ms /
-                // space up), freeze ~100ms at the same point the AHK holds middle-mouse,
-                // 14ms breath, then 20 rapid spins of 1250-ish at 8ms.
+                // space up), freeze ~200ms at the same point the AHK holds middle-mouse,
+                // 14ms breath, then the speedglitch-style alternating spin.
                 Native.SendKeyTap(0x43);                       // c
                 Native.SendKeyDown(0x20);                      // Space down
                 Thread.Sleep(20);                              // AHK: Sleep(20) when frozen
@@ -346,7 +352,7 @@ namespace PrisonLifeMacro.Core
                     Frozen = true;
                     Native.SuspendProcessByName(TargetProcess);
                 }
-                Thread.Sleep(100);                             // AHK: MMB down, Sleep(100), MMB up
+                Thread.Sleep(200);                             // freeze duration (0.2s)
                 if (frozenHere)
                 {
                     Frozen = false;
@@ -354,15 +360,22 @@ namespace PrisonLifeMacro.Core
                 }
 
                 Thread.Sleep(14);                              // AHK: Sleep(14) before the spin
-                for (int i = 0; i < PressureJumpSpins; i++)    // AHK: Loop Spins (20)
+                // Speedglitch-style spin (Spencer-Macro-Utilities): alternate +pix / -pix
+                // once per Roblox frame (1000 / FPS ms). Pix is sensitivity-driven.
+                int delay = FrameDelayMs();
+                long spinStart = Environment.TickCount;
+                while (Environment.TickCount - spinStart <= 200)
                 {
-                    Native.MoveMouse(PJumpX, 0);               // AHK: mouse_event(MOVE, Spin, 0)
-                    Thread.Sleep(PressureJumpSleepMs);         // AHK: Sleep(8)
+                    Native.MoveMouse(PJumpPix, 0);
+                    Thread.Sleep(delay);
+                    Native.MoveMouse(-PJumpPix, 0);
+                    Thread.Sleep(delay);
                 }
             }
             else
             {
-                // Original macro logic (no freeze).
+                // Original macro logic (no freeze) with the same speedglitch-style spin
+                // as the freeze branch: alternate +pix / -pix once per Roblox frame.
                 Native.SendKeyTap(0x43);                       // c
                 Thread.Sleep(6);
                 Native.SendKeyDown(0x20);                      // Space down
@@ -370,11 +383,14 @@ namespace PrisonLifeMacro.Core
                 Native.SendKeyUp(0x20);                        // Space up
                 Thread.Sleep(4);
 
+                int delay = FrameDelayMs();
                 long start = Environment.TickCount;
                 while (Environment.TickCount - start <= 200)
                 {
-                    Native.MoveMouse(X, 0);
-                    Thread.Sleep(4);
+                    Native.MoveMouse(PJumpPix, 0);
+                    Thread.Sleep(delay);
+                    Native.MoveMouse(-PJumpPix, 0);
+                    Thread.Sleep(delay);
                 }
             }
         }
