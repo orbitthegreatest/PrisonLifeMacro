@@ -17,15 +17,9 @@
     <DebugSymbols>false</DebugSymbols>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <Product>Prison Life Macro Suite</Product>
-<<<<<<< HEAD
     <Version>4.5.5</Version>
     <AssemblyVersion>4.5.5.0</AssemblyVersion>
     <FileVersion>4.5.5.0</FileVersion>
-=======
-    <Version>4.5.1</Version>
-    <AssemblyVersion>4.5.1.0</AssemblyVersion>
-    <FileVersion>4.5.1.0</FileVersion>
->>>>>>> aba2c2756940bc7aa59086080b1253e7a90498dc
   </PropertyGroup>
 
   <ItemGroup>

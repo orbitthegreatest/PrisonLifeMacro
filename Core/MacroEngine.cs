@@ -28,12 +28,8 @@ namespace PrisonLifeMacro.Core
         private const int RotationBonusDelayMs = 0;
         private const bool RotationLeftFlick = false;
         private const bool RotationJumpDuring = false;
-<<<<<<< HEAD
         private const bool RotationFlickBack = true;
         private const int RotationFlickBackDelayMs = 200;
-=======
-        private const bool RotationFlickBack = false;
->>>>>>> aba2c2756940bc7aa59086080b1253e7a90498dc
 
         // Pressure Jump. The freeze branch uses the Speedglitch-style spin from
         // Spencer-Macro-Utilities: per-move pixel is sensitivity-driven and it alternates
@@ -488,12 +484,8 @@ namespace PrisonLifeMacro.Core
                     if (RotationJumpDuring) Native.SendKeyDown(KeyNames.NameToVk("Space"));
                     Thread.Sleep(RotationWallhopLengthMs);
                 }
-<<<<<<< HEAD
                 Thread.Sleep(RotationFlickBackDelayMs);
                 Native.MoveMouse(-dx, 0);
-=======
-                Native.MoveMouse(dx, 0);
->>>>>>> aba2c2756940bc7aa59086080b1253e7a90498dc
             }
             else if (RotationJumpDuring)
             {
