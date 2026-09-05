@@ -107,44 +107,24 @@ namespace PrisonLifeMacro.Core
             _actions.CompleteAdding();
         }
 
-        private const double ReferenceWidth = 1920.0;
-        private const double BaseDpi = 96.0;
-
-        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
-        private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
-
         [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern IntPtr GetDC(IntPtr hWnd);
+        private static extern uint GetDpiForSystem();
 
-        [System.Runtime.InteropServices.DllImport("user32.dll")]
-        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
-
-        private const int LOGPIXELSX = 88;
-
-        private static double GetScaleFactor()
+        private static double GetDpiScale()
         {
-            try
-            {
-                double logicalWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
-                IntPtr hdc = GetDC(IntPtr.Zero);
-                double dpi = GetDeviceCaps(hdc, LOGPIXELSX);
-                ReleaseDC(IntPtr.Zero, hdc);
-                if (dpi <= 0) dpi = BaseDpi;
-                double physicalWidth = logicalWidth * dpi / BaseDpi;
-                return ReferenceWidth / physicalWidth;
-            }
+            try { return GetDpiForSystem() / 96.0; }
             catch { return 1.0; }
         }
 
         public void RecalculatePixels()
         {
             double cs = Settings.CS > 0 ? Settings.CS : 0.01;
-            double resScale = GetScaleFactor();
-            X = (int)Math.Round((Spin * BaseCS) / cs * resScale);
-            RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs) * resScale);
+            double dpi = GetDpiScale();
+            X = (int)Math.Round((Spin * BaseCS) / cs * dpi);
+            RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs) * dpi);
             // Speedglitch parity (Spencer-Macro-Utilities app_ui.cpp):
             //   speedBase = 360;  Pix = Round((360 / sens) * (359/360) * (359/360))
-            PJumpPix = (int)Math.Round((360.0 / cs) * (359.0 / 360.0) * (359.0 / 360.0) * resScale);
+            PJumpPix = (int)Math.Round((360.0 / cs) * (359.0 / 360.0) * (359.0 / 360.0) * dpi);
         }
 
         // Speedglitch parity (macro_runtime.cpp FrameDelaysForFps): one Roblox frame in ms.
