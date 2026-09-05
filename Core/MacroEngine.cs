@@ -107,14 +107,23 @@ namespace PrisonLifeMacro.Core
             _actions.CompleteAdding();
         }
 
+        private const double ReferenceWidth = 1920.0;
+
+        private static double GetScreenWidth()
+        {
+            try { return System.Windows.SystemParameters.PrimaryScreenWidth; }
+            catch { return ReferenceWidth; }
+        }
+
         public void RecalculatePixels()
         {
             double cs = Settings.CS > 0 ? Settings.CS : 0.01;
-            X = (int)Math.Round((Spin * BaseCS) / cs);
-            RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs));
+            double resScale = ReferenceWidth / GetScreenWidth();
+            X = (int)Math.Round((Spin * BaseCS) / cs * resScale);
+            RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs) * resScale);
             // Speedglitch parity (Spencer-Macro-Utilities app_ui.cpp):
             //   speedBase = 360;  Pix = Round((360 / sens) * (359/360) * (359/360))
-            PJumpPix = (int)Math.Round((360.0 / cs) * (359.0 / 360.0) * (359.0 / 360.0));
+            PJumpPix = (int)Math.Round((360.0 / cs) * (359.0 / 360.0) * (359.0 / 360.0) * resScale);
         }
 
         // Speedglitch parity (macro_runtime.cpp FrameDelaysForFps): one Roblox frame in ms.
