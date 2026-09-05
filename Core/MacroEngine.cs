@@ -108,17 +108,38 @@ namespace PrisonLifeMacro.Core
         }
 
         private const double ReferenceWidth = 1920.0;
+        private const double BaseDpi = 96.0;
 
-        private static double GetScreenWidth()
+        [System.Runtime.InteropServices.DllImport("gdi32.dll")]
+        private static extern int GetDeviceCaps(IntPtr hdc, int nIndex);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetDC(IntPtr hWnd);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDC);
+
+        private const int LOGPIXELSX = 88;
+
+        private static double GetScaleFactor()
         {
-            try { return System.Windows.SystemParameters.PrimaryScreenWidth; }
-            catch { return ReferenceWidth; }
+            try
+            {
+                double logicalWidth = System.Windows.SystemParameters.PrimaryScreenWidth;
+                IntPtr hdc = GetDC(IntPtr.Zero);
+                double dpi = GetDeviceCaps(hdc, LOGPIXELSX);
+                ReleaseDC(IntPtr.Zero, hdc);
+                if (dpi <= 0) dpi = BaseDpi;
+                double physicalWidth = logicalWidth * dpi / BaseDpi;
+                return ReferenceWidth / physicalWidth;
+            }
+            catch { return 1.0; }
         }
 
         public void RecalculatePixels()
         {
             double cs = Settings.CS > 0 ? Settings.CS : 0.01;
-            double resScale = ReferenceWidth / GetScreenWidth();
+            double resScale = GetScaleFactor();
             X = (int)Math.Round((Spin * BaseCS) / cs * resScale);
             RotX = (int)Math.Round(RotationFlickDegrees * 720.0 / (360.0 * cs) * resScale);
             // Speedglitch parity (Spencer-Macro-Utilities app_ui.cpp):
