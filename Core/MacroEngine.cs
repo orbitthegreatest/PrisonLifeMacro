@@ -48,6 +48,7 @@ namespace PrisonLifeMacro.Core
         public volatile bool FastGunSwapOn;
         public volatile bool FastGunSwapHolding;
         public volatile bool SprintHeld;
+        private volatile bool _wasProcessFocused;
         public volatile bool Frozen;
         public volatile bool Capturing;
         public volatile bool SmartCrouchActive;
@@ -91,6 +92,8 @@ namespace PrisonLifeMacro.Core
 
             _focusTimer = new Timer(_ => WatchFocus(), null, 300, 300);
             RecalculatePixels();
+            if (Settings.SprintEnabled && Settings.SprintMode == "Always")
+                PostDelayed(AlwaysSprintLoop, 300);
         }
 
         public void Shutdown()
@@ -282,17 +285,21 @@ namespace PrisonLifeMacro.Core
                 // Default mode: pass shift through to game
             }
 
+            // ---- Always Sprint: re-engage on WASD press (covers respawn) ----
+            if (Settings.SprintEnabled && Settings.SprintMode == "Always" && down && !repeat &&
+                (vk == 0x57 || vk == 0x41 || vk == 0x53 || vk == 0x44) && vk != 0x43) // W A S D, not C
+            {
+                Native.SendKeyUp(0x10);
+                Native.SendKeyDown(0x10);
+            }
+
             // ---- Crouch detection: release sprint so crouch registers ----
-            if (Settings.SprintEnabled && Settings.SprintMode == "Always" && vk == 0x43 && down)
+            if (Settings.SprintEnabled && Settings.SprintMode == "Always" && vk == 0x43 && down && !repeat)
             {
                 if (SprintHeld)
                 {
-                    Native.SendKeyUp(0x10);
-                    PostDelayed(() =>
-                    {
-                        if (SprintHeld && Settings.SprintEnabled && Settings.SprintMode == "Always")
-                            Native.SendKeyDown(0x10);
-                    }, 150);
+                    Post(CrouchAndReEngageAction);
+                    return true;
                 }
             }
 
@@ -462,6 +469,16 @@ namespace PrisonLifeMacro.Core
                     Thread.Sleep(delay);
                 }
             }
+
+            // Force sprint re-engagement: the crouch/uncrouch cycle cancels
+            // sprint internally in the game.  Release + re-press Shift so the
+            // game sees a fresh keydown and resumes sprinting.
+            if (Settings.SprintEnabled && Settings.SprintMode == "Always")
+            {
+                Native.SendKeyUp(0x10);
+                Thread.Sleep(10);
+                Native.SendKeyDown(0x10);
+            }
         }
 
         // ------------------------------------------------------------------
@@ -507,6 +524,11 @@ namespace PrisonLifeMacro.Core
             int delay = Settings.ClipDelayMs;
             if (delay < 0) delay = 0;
 
+            // Release Shift so the game registers C as crouch (sprint overrides
+            // crouch when Shift is held).
+            bool wasSprintHeld = SprintHeld;
+            if (wasSprintHeld) Native.SendKeyUp(0x10);
+
             Native.SendKeyDown(0x57);                    // w down - hold for the whole macro
             try
             {
@@ -519,6 +541,12 @@ namespace PrisonLifeMacro.Core
             finally
             {
                 Native.SendKeyUp(0x57);                  // w up at the very end
+            }
+
+            // Re-engage sprint if Always mode is active.
+            if (wasSprintHeld && Settings.SprintEnabled && Settings.SprintMode == "Always")
+            {
+                Native.SendKeyDown(0x10);
             }
         }
 
@@ -585,14 +613,21 @@ namespace PrisonLifeMacro.Core
             }
         }
 
+
         private void AlwaysSprintLoop()
         {
             if (!Settings.SprintEnabled || Settings.SprintMode != "Always" || GlobalSuspended)
-                return;
-            if (Native.IsProcessFocused(TargetProcess))
             {
-                if (!SprintHeld)
+                PostDelayed(AlwaysSprintLoop, 50);
+                return;
+            }
+            bool focused = Native.IsProcessFocused(TargetProcess);
+            if (focused)
+            {
+                if (!SprintHeld || !_wasProcessFocused)
                 {
+                    Native.SendKeyUp(0x10);
+                    Thread.Sleep(10);
                     SprintHeld = true;
                     Native.SendKeyDown(0x10);
                 }
@@ -605,6 +640,7 @@ namespace PrisonLifeMacro.Core
                     Native.SendKeyUp(0x10);
                 }
             }
+            _wasProcessFocused = focused;
             PostDelayed(AlwaysSprintLoop, 50);
         }
 
@@ -613,13 +649,28 @@ namespace PrisonLifeMacro.Core
             var t = new Timer(_ => { Post(a); }, null, ms, Timeout.Infinite);
         }
 
+        private void ReEngageSprint()
+        {
+            if (!Settings.SprintEnabled || Settings.SprintMode != "Always") return;
+            Native.SendKeyUp(0x10);
+            Thread.Sleep(10);
+            SprintHeld = true;
+            Native.SendKeyDown(0x10);
+        }
+
+        private void CrouchAndReEngageAction()
+        {
+            Native.SendKeyUp(0x10);
+            Native.SendKeyTap(0x43);
+            Thread.Sleep(10);
+            if (Settings.SprintEnabled && Settings.SprintMode == "Always")
+                Native.SendKeyDown(0x10);
+        }
+
         private void WatchFocus()
         {
-            if (SprintHeld && !Native.IsProcessFocused(TargetProcess))
-            {
-                SprintHeld = false;
-                Native.SendKeyUp(0x10);
-            }
+            // AlwaysSprintLoop is the sole authority on SprintHeld / Shift key
+            // state.  Nothing to do here.
         }
 
         // ------------------------------------------------------------------

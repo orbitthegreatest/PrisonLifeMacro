@@ -128,6 +128,7 @@ namespace PrisonLifeMacro.Core
             SprintEnabled = ReadBool("Sprint", "Enabled", false);
             SprintMode = Trim(IniRead("Sprint", "Mode", "Toggle"));
             if (SprintMode != "Default" && SprintMode != "Always") SprintMode = "Toggle";
+            SprintEnabled = SprintMode != "Default";
 
             SmartCrouchEnabled = ReadBool("SmartCrouch", "Enabled", false);
 

@@ -80,7 +80,6 @@ namespace PrisonLifeMacro
             RotEnabledCB.IsChecked = Settings.RotationEnabled;
             RotHotkeyDisplay.Text = KeyDisplay(Settings.RotationKey);
 
-            SprEnabledCB.IsChecked = Settings.SprintEnabled;
             SprModeDefault.IsChecked = Settings.SprintMode == "Default";
             SprModeToggle.IsChecked = Settings.SprintMode == "Toggle";
             SprModeAlways.IsChecked = Settings.SprintMode == "Always";
@@ -341,8 +340,8 @@ namespace PrisonLifeMacro
             Settings.FreezeEnabled = FreezeEnabledCB.IsChecked == true;
             Settings.FreezeMode = FreezeModeHold.IsChecked == true ? "Hold" : "Toggle";
             Settings.RotationEnabled = RotEnabledCB.IsChecked == true;
-            Settings.SprintEnabled = SprEnabledCB.IsChecked == true;
             Settings.SprintMode = SprModeDefault.IsChecked == true ? "Default" : (SprModeAlways.IsChecked == true ? "Always" : "Toggle");
+            Settings.SprintEnabled = Settings.SprintMode != "Default";
             Settings.SmartCrouchEnabled = SCEnabledCB.IsChecked == true;
             Settings.AutoComboEnabled = ACEnabledCB.IsChecked == true;
             Settings.AutoComboClickMode = ACClickModeToggle.IsChecked == true ? "Toggle" : "Hold";

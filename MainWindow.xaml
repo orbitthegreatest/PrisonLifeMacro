@@ -537,9 +537,7 @@
                         <!-- Sprint -->
                         <TabItem Header="Sprint" Style="{StaticResource DarkTabItem}">
                             <StackPanel>
-                                <CheckBox x:Name="SprEnabledCB" Style="{StaticResource DarkCheckBox}"
-                                          Content="Enable Sprint"/>
-                                <TextBlock Margin="0,14,0,0" Style="{StaticResource HintText}" Text="Sprint Mode:"/>
+                                <TextBlock Style="{StaticResource HintText}" Text="Sprint Mode:"/>
                                 <StackPanel Margin="0,8,0,0">
                                     <RadioButton x:Name="SprModeDefault" Style="{StaticResource DarkRadio}"
                                                  Content="Default (no sprint macro)" Margin="0,0,0,6"/>
