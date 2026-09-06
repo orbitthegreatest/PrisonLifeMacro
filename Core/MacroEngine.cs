@@ -318,6 +318,19 @@ namespace PrisonLifeMacro.Core
                 return true;
             }
 
+            // ---- Fast Gun Swap (pass-through, trigger locked to LButton) ----
+            if (Settings.FastGunSwapEnabled && vk == 0x01) // LButton
+            {
+                if (Settings.FastGunSwapMode == "Hold")
+                {
+                    if (down && !repeat) Post(() => FastGunSwapHoldStart("LButton"));
+                }
+                else
+                {
+                    if (down && !repeat) Post(FastGunSwapToggle);
+                }
+            }
+
             // ---- Auto Combo LButton (pass-through) ----
             if (Settings.AutoComboEnabled && vk == 0x01) // LButton
             {
@@ -330,22 +343,6 @@ namespace PrisonLifeMacro.Core
                 {
                     if (down && !repeat) Post(AutoComboToggle);
                 }
-                return false;
-            }
-
-            // ---- Fast Gun Swap (pass-through) ----
-            if (Settings.FastGunSwapEnabled && !string.IsNullOrEmpty(Settings.FastGunSwapKey) &&
-                vk == KeyNames.NameToVk(Settings.FastGunSwapKey))
-            {
-                if (Settings.FastGunSwapMode == "Hold")
-                {
-                    if (down && !repeat) Post(() => FastGunSwapHoldStart(Settings.FastGunSwapKey));
-                }
-                else
-                {
-                    if (down && !repeat) Post(FastGunSwapToggle);
-                }
-                return false;
             }
 
             // ---- Fast Gun Swap On/Off (pass-through) ----
