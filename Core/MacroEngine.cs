@@ -282,6 +282,20 @@ namespace PrisonLifeMacro.Core
                 // Default mode: pass shift through to game
             }
 
+            // ---- Crouch detection: release sprint so crouch registers ----
+            if (Settings.SprintEnabled && Settings.SprintMode == "Always" && vk == 0x43 && down)
+            {
+                if (SprintHeld)
+                {
+                    Native.SendKeyUp(0x10);
+                    PostDelayed(() =>
+                    {
+                        if (SprintHeld && Settings.SprintEnabled && Settings.SprintMode == "Always")
+                            Native.SendKeyDown(0x10);
+                    }, 150);
+                }
+            }
+
             // ---- Smart Crouch (C key, consumed) ----
             if (Settings.SmartCrouchEnabled && vk == 0x43) // C key
             {
