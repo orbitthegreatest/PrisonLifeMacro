@@ -192,6 +192,36 @@
             <Setter Property="VerticalAlignment" Value="Center"/>
         </Style>
 
+        <!-- ======================= Reset hotkey button ======================= -->
+        <Style x:Key="ResetButton" TargetType="Button">
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
+            <Setter Property="Background" Value="{StaticResource PanelRaisedBrush}"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="VerticalAlignment" Value="Center"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" CornerRadius="6" Background="{TemplateBinding Background}"
+                                BorderBrush="{StaticResource LineBrush}" BorderThickness="1">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                              Margin="8,4"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Foreground" Value="{StaticResource RedBrush}"/>
+                                <Setter TargetName="bd" Property="BorderBrush" Value="{StaticResource RedBrush}"/>
+                            </Trigger>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.5"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <!-- ======================= Tab control ======================= -->
         <Style x:Key="DarkTabItem" TargetType="TabItem">
             <Setter Property="Foreground" Value="{StaticResource DimBrush}"/>
@@ -380,6 +410,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
@@ -391,12 +422,16 @@
                                 <TextBlock Grid.Row="0" Grid.Column="3" Text="Increase:" Style="{StaticResource InputLabel}"/>
                                 <TextBlock Grid.Row="0" Grid.Column="4" x:Name="IncSlotHotkeyDisplay"
                                            Style="{StaticResource HotkeyDisplay}"/>
-                                <Button Grid.Row="0" Grid.Column="5" x:Name="IncSlotSetBtn" Style="{StaticResource RoundButton}"
+                                <Button Grid.Row="0" Grid.Column="5" x:Name="IncSlotResetBtn" Style="{StaticResource ResetButton}"
+                                        Content="Reset" Margin="4,0,0,0" Click="IncSlotResetBtn_Click"/>
+                                <Button Grid.Row="0" Grid.Column="6" x:Name="IncSlotSetBtn" Style="{StaticResource RoundButton}"
                                         Content="Set Increase Key" Margin="12,0,0,0" Click="IncSlotSetBtn_Click"/>
                                 <TextBlock Grid.Row="1" Grid.Column="3" Text="Decrease:" Style="{StaticResource InputLabel}" Margin="0,10,0,0"/>
                                 <TextBlock Grid.Row="1" Grid.Column="4" x:Name="DecSlotHotkeyDisplay"
                                            Style="{StaticResource HotkeyDisplay}" Margin="0,10,0,0"/>
-                                <Button Grid.Row="1" Grid.Column="5" x:Name="DecSlotSetBtn" Style="{StaticResource RoundButton}"
+                                <Button Grid.Row="1" Grid.Column="5" x:Name="DecSlotResetBtn" Style="{StaticResource ResetButton}"
+                                        Content="Reset" Margin="4,10,0,0" Click="DecSlotResetBtn_Click"/>
+                                <Button Grid.Row="1" Grid.Column="6" x:Name="DecSlotSetBtn" Style="{StaticResource RoundButton}"
                                         Content="Set Decrease Key" Margin="12,10,0,0" Click="DecSlotSetBtn_Click"/>
                             </Grid>
                             <TextBlock Margin="0,10,0,0" Style="{StaticResource HintText}"
@@ -414,10 +449,13 @@
                                     <ColumnDefinition Width="140"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="Suspend Key:" Style="{StaticResource InputLabel}"/>
                                 <TextBlock Grid.Column="1" x:Name="GSuspendHotkeyDisplay"
                                            Style="{StaticResource HotkeyDisplay}"/>
+                                <Button Grid.Column="2" x:Name="GSuspendResetBtn" Style="{StaticResource ResetButton}"
+                                        Content="Reset" Margin="4,0,0,0" Click="GSuspendResetBtn_Click"/>
                                 <Button Grid.Column="3" x:Name="GSuspendSetBtn" Style="{StaticResource RoundButton}"
                                         Content="Set Suspend Key" Margin="12,0,0,0" Click="GSuspendSetBtn_Click"/>
                             </Grid>
@@ -440,6 +478,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                     <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="PJHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="PJResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Click="PJResetBtn_Click"/>
                                 </StackPanel>
                                 <Button x:Name="PJSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
                                         HorizontalAlignment="Left" Content="Click, then press key/button for Pressure Jump..."
@@ -461,6 +501,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                     <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="ClipHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="ClipResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Click="ClipResetBtn_Click"/>
                                 </StackPanel>
                                 <Button x:Name="ClipSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
                                         HorizontalAlignment="Left" Content="Click, then press key/button for Clip..."
@@ -484,6 +526,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                     <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="LagHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="LagResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Click="LagResetBtn_Click"/>
                                 </StackPanel>
                                 <Button x:Name="LagSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
                                         HorizontalAlignment="Left" Content="Click, then press key/button for Lag Switch..."
@@ -503,6 +547,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                     <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="FreezeHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="FreezeResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Click="FreezeResetBtn_Click"/>
                                 </StackPanel>
                                 <Button x:Name="FreezeSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
                                         HorizontalAlignment="Left" Content="Click, then press key/button for Freeze..."
@@ -525,6 +571,8 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                     <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="RotHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="RotResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Click="RotResetBtn_Click"/>
                                 </StackPanel>
                                 <Button x:Name="RotSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
                                         HorizontalAlignment="Left" Content="Click, then press key/button for Rotation..."
@@ -572,9 +620,11 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                     <TextBlock Text="On/Off Key:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="FGSOnOffHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="FGSOnOffResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Margin="8,0,0,0" Click="FGSOnOffResetBtn_Click"/>
                                     <Button x:Name="FGSOnOffSetBtn" Style="{StaticResource RoundButton}"
                                             Content="Click, then press key/button for Fast Gun Swap On/Off..."
-                                            Click="FGSOnOffSetBtn_Click"/>
+                                            Margin="8,0,0,0" Click="FGSOnOffSetBtn_Click"/>
                                 </StackPanel>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}"
                                            Text="Cycles through all gun slots and clicks after each one. Shoot delay is fixed at 1ms. Fast Gun Swap starts OFF - press the On/Off key to arm it."/>
@@ -591,9 +641,11 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                     <TextBlock Text="Trigger:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="SRHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="SRResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Margin="8,0,0,0" Click="SRResetBtn_Click"/>
                                     <Button x:Name="SRSetBtn" Style="{StaticResource RoundButton}"
                                             Content="Click, then press key/button for Shuffle Reload Trigger..."
-                                            Click="SRSetBtn_Click"/>
+                                            Margin="8,0,0,0" Click="SRSetBtn_Click"/>
                                 </StackPanel>
                                 <TextBlock Margin="0,14,0,0" Style="{StaticResource HintText}"
                                            Text="Cycles the slots, pressing Reload after each one."/>
@@ -624,9 +676,11 @@
                                 <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                                     <TextBlock Text="Suspend Key:" Style="{StaticResource InputLabel}" Width="80"/>
                                     <TextBlock x:Name="ACSuspendHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="ACSuspendResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Margin="8,0,0,0" Click="ACSuspendResetBtn_Click"/>
                                     <Button x:Name="ACSuspendSetBtn" Style="{StaticResource RoundButton}"
                                             Content="Click, then press key/button for Auto Combo Suspend..."
-                                            Click="ACSuspendSetBtn_Click"/>
+                                            Margin="8,0,0,0" Click="ACSuspendSetBtn_Click"/>
                                 </StackPanel>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}" Text="Click Mode:"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
@@ -677,6 +731,8 @@
                            TextTrimming="CharacterEllipsis"/>
 
                 <StackPanel Grid.Column="2" Orientation="Horizontal">
+                    <Button x:Name="BtnResetAll" Style="{StaticResource RoundButton}" Content="Reset All"
+                            Margin="0,0,10,0" Click="BtnResetAll_Click"/>
                     <Button x:Name="BtnCheckUpdates" Style="{StaticResource RoundButton}" Content="Check Updates"
                             Margin="0,0,10,0" Click="BtnAboutUpdates_Click"/>
                     <Button x:Name="BtnHide" Style="{StaticResource RoundButton}" Content="Hide to Tray"

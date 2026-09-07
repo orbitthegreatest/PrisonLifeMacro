@@ -173,6 +173,18 @@ namespace PrisonLifeMacro
             AttachButtonHover(IncSlotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(DecSlotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(GSuspendSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(BtnResetAll, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(PJResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(ClipResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(LagResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(FreezeResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(RotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(FGSOnOffResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(SRResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(ACSuspendResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(IncSlotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(DecSlotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(GSuspendResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
         }
 
         private void AttachButtonHover(Button b, Color baseColor, Color hoverColor)
@@ -300,6 +312,97 @@ namespace PrisonLifeMacro
         private void IncSlotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("IncSlot", IncSlotSetBtn, "Click, then press key/button for Increase...");
         private void DecSlotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("DecSlot", DecSlotSetBtn, "Click, then press key/button for Decrease...");
         private void GSuspendSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("GSuspend", GSuspendSetBtn, "Click, then press key/button for Suspend...");
+
+        // ------------------------------------------------------------------
+        // Reset hotkey buttons
+        // ------------------------------------------------------------------
+        private void ResetHotkey(string target, TextBlock display)
+        {
+            switch (target)
+            {
+                case "PJ": Settings.PressureJumpKey = ""; break;
+                case "Clip": Settings.ClipKey = ""; break;
+                case "LagSwitch": Settings.LagSwitchKey = ""; break;
+                case "Freeze": Settings.FreezeKey = ""; break;
+                case "Rotation": Settings.RotationKey = ""; break;
+                case "FGSOnOff": Settings.FastGunSwapOnOffKey = ""; break;
+                case "SR": Settings.ShuffleReloadKey = ""; break;
+                case "ACSuspend": Settings.AutoComboSuspendKey = ""; break;
+                case "IncSlot": Settings.IncreaseSlotKey = ""; break;
+                case "DecSlot": Settings.DecreaseSlotKey = ""; break;
+                case "GSuspend": Settings.GlobalSuspendKey = ""; break;
+            }
+            display.Text = "(none)";
+        }
+
+        private void PJResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("PJ", PJHotkeyDisplay);
+        private void ClipResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Clip", ClipHotkeyDisplay);
+        private void LagResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("LagSwitch", LagHotkeyDisplay);
+        private void FreezeResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Freeze", FreezeHotkeyDisplay);
+        private void RotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Rotation", RotHotkeyDisplay);
+        private void FGSOnOffResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("FGSOnOff", FGSOnOffHotkeyDisplay);
+        private void SRResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("SR", SRHotkeyDisplay);
+        private void ACSuspendResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("ACSuspend", ACSuspendHotkeyDisplay);
+        private void IncSlotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("IncSlot", IncSlotHotkeyDisplay);
+        private void DecSlotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("DecSlot", DecSlotHotkeyDisplay);
+        private void GSuspendResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("GSuspend", GSuspendHotkeyDisplay);
+
+        // ------------------------------------------------------------------
+        // Reset all settings
+        // ------------------------------------------------------------------
+        private void BtnResetAll_Click(object sender, RoutedEventArgs e)
+        {
+            var result = MessageBox.Show(this, "Reset ALL settings to defaults? This cannot be undone.",
+                "Reset All Settings", MessageBoxButton.YesNo, MessageBoxImage.Warning);
+            if (result != MessageBoxResult.Yes) return;
+
+            Settings.PressureJumpKey = "";
+            Settings.PressureJumpEnabled = false;
+            Settings.PressureJumpFreeze = false;
+
+            Settings.ClipKey = "";
+            Settings.ClipDelayMs = 6;
+            Settings.ClipEnabled = false;
+
+            Settings.LagSwitchKey = "";
+            Settings.LagSwitchEnabled = false;
+
+            Settings.FreezeKey = "";
+            Settings.FreezeMode = "Toggle";
+            Settings.FreezeEnabled = false;
+
+            Settings.RotationKey = "";
+            Settings.RotationEnabled = false;
+
+            Settings.SprintMode = "Default";
+            Settings.SprintEnabled = false;
+
+            Settings.SmartCrouchEnabled = false;
+
+            Settings.AutoComboEnabled = false;
+            Settings.AutoComboSuspendKey = "";
+            Settings.AutoComboClickMode = "Toggle";
+
+            Settings.FastGunSwapEnabled = false;
+            Settings.FastGunSwapOnOffKey = "";
+            Settings.FastGunSwapMode = "Hold";
+
+            Settings.ShuffleReloadEnabled = false;
+            Settings.ShuffleReloadKey = "";
+
+            Settings.GunSlotCount = 3;
+            Settings.IncreaseSlotKey = "";
+            Settings.DecreaseSlotKey = "";
+
+            Settings.GlobalSuspendKey = "";
+
+            Settings.CS = 0.123;
+            Settings.FPS = 60;
+            Settings.StartMinimized = false;
+
+            PopulateFromSettings();
+            FeedbackOverlay.Show("Settings reset to defaults");
+        }
 
         // ------------------------------------------------------------------
         // Save
