@@ -58,8 +58,8 @@ namespace PrisonLifeMacro
         {
             CSInput.Text = Settings.CS.ToString("0.######");
             FPSInput.Text = Settings.FPS.ToString("0.####");
-            GunSlotCountInput.Text = Settings.GunSlotCount.ToString();
             StartMinCB.IsChecked = Settings.StartMinimized;
+            ActiveSlotsDisplay.Text = "Active slots: " + Settings.ActiveSlots;
 
             PJEnabledCB.IsChecked = Settings.PressureJumpEnabled;
             PJHotkeyDisplay.Text = KeyDisplay(Settings.PressureJumpKey);
@@ -93,12 +93,12 @@ namespace PrisonLifeMacro
             ACRifleSlotInput.Text = Settings.AutoComboRifleSlot.ToString();
             ACShotgunSlotInput.Text = Settings.AutoComboShotgunSlot.ToString();
 
-            IncSlotHotkeyDisplay.Text = KeyDisplay(Settings.IncreaseSlotKey);
-            DecSlotHotkeyDisplay.Text = KeyDisplay(Settings.DecreaseSlotKey);
+
 
             GSuspendHotkeyDisplay.Text = KeyDisplay(Settings.GlobalSuspendKey);
 
             FGSEnabledCB.IsChecked = Settings.FastGunSwapEnabled;
+            FGSDelayInput.Text = Settings.FastGunSwapDelayMs.ToString();
             FGSOnOffHotkeyDisplay.Text = KeyDisplay(Settings.FastGunSwapOnOffKey);
             FGSModeHold.IsChecked = Settings.FastGunSwapMode == "Hold";
             FGSModeToggle.IsChecked = Settings.FastGunSwapMode == "Toggle";
@@ -172,8 +172,7 @@ namespace PrisonLifeMacro
             AttachButtonHover(FGSOnOffSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(SRSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(ACSuspendSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
-            AttachButtonHover(IncSlotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
-            AttachButtonHover(DecSlotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(BtnWeaponSlots, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(GSuspendSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(BtnResetAll, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(PJResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
@@ -184,8 +183,6 @@ namespace PrisonLifeMacro
             AttachButtonHover(FGSOnOffResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(SRResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(ACSuspendResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
-            AttachButtonHover(IncSlotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
-            AttachButtonHover(DecSlotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(GSuspendResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
         }
 
@@ -278,8 +275,6 @@ namespace PrisonLifeMacro
                 case "FGSOnOff": Settings.FastGunSwapOnOffKey = name; break;
                 case "SR": Settings.ShuffleReloadKey = name; break;
                 case "ACSuspend": Settings.AutoComboSuspendKey = name; break;
-                case "IncSlot": Settings.IncreaseSlotKey = name; break;
-                case "DecSlot": Settings.DecreaseSlotKey = name; break;
                 case "GSuspend": Settings.GlobalSuspendKey = name; break;
             }
             RefreshDisplays();
@@ -295,8 +290,6 @@ namespace PrisonLifeMacro
             FGSOnOffHotkeyDisplay.Text = KeyDisplay(Settings.FastGunSwapOnOffKey);
             SRHotkeyDisplay.Text = KeyDisplay(Settings.ShuffleReloadKey);
             ACSuspendHotkeyDisplay.Text = KeyDisplay(Settings.AutoComboSuspendKey);
-            IncSlotHotkeyDisplay.Text = KeyDisplay(Settings.IncreaseSlotKey);
-            DecSlotHotkeyDisplay.Text = KeyDisplay(Settings.DecreaseSlotKey);
             GSuspendHotkeyDisplay.Text = KeyDisplay(Settings.GlobalSuspendKey);
         }
 
@@ -311,8 +304,6 @@ namespace PrisonLifeMacro
         private void FGSOnOffSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("FGSOnOff", FGSOnOffSetBtn, "Click, then press key/button for Fast Gun Swap On/Off...");
         private void SRSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("SR", SRSetBtn, "Click, then press key/button for Shuffle Reload Trigger...");
         private void ACSuspendSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("ACSuspend", ACSuspendSetBtn, "Click, then press key/button for Auto Combo Suspend...");
-        private void IncSlotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("IncSlot", IncSlotSetBtn, "Click, then press key/button for Increase...");
-        private void DecSlotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("DecSlot", DecSlotSetBtn, "Click, then press key/button for Decrease...");
         private void GSuspendSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("GSuspend", GSuspendSetBtn, "Click, then press key/button for Suspend...");
 
         // ------------------------------------------------------------------
@@ -330,8 +321,6 @@ namespace PrisonLifeMacro
                 case "FGSOnOff": Settings.FastGunSwapOnOffKey = ""; break;
                 case "SR": Settings.ShuffleReloadKey = ""; break;
                 case "ACSuspend": Settings.AutoComboSuspendKey = ""; break;
-                case "IncSlot": Settings.IncreaseSlotKey = ""; break;
-                case "DecSlot": Settings.DecreaseSlotKey = ""; break;
                 case "GSuspend": Settings.GlobalSuspendKey = ""; break;
             }
             display.Text = "(none)";
@@ -345,9 +334,20 @@ namespace PrisonLifeMacro
         private void FGSOnOffResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("FGSOnOff", FGSOnOffHotkeyDisplay);
         private void SRResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("SR", SRHotkeyDisplay);
         private void ACSuspendResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("ACSuspend", ACSuspendHotkeyDisplay);
-        private void IncSlotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("IncSlot", IncSlotHotkeyDisplay);
-        private void DecSlotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("DecSlot", DecSlotHotkeyDisplay);
         private void GSuspendResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("GSuspend", GSuspendHotkeyDisplay);
+
+        // ------------------------------------------------------------------
+        // Weapon slot setup
+        // ------------------------------------------------------------------
+        private void BtnWeaponSlots_Click(object sender, RoutedEventArgs e)
+        {
+            var picker = new WeaponSlotPickerWindow(Settings.ActiveSlots) { Owner = this };
+            if (picker.ShowDialog() == true)
+            {
+                Settings.ActiveSlots = picker.ResultSlots;
+                ActiveSlotsDisplay.Text = "Active slots: " + Settings.ActiveSlots;
+            }
+        }
 
         // ------------------------------------------------------------------
         // Reset all settings
@@ -390,13 +390,12 @@ namespace PrisonLifeMacro
             Settings.FastGunSwapEnabled = false;
             Settings.FastGunSwapOnOffKey = "";
             Settings.FastGunSwapMode = "Hold";
+            Settings.FastGunSwapDelayMs = 1;
 
             Settings.ShuffleReloadEnabled = false;
             Settings.ShuffleReloadKey = "";
 
-            Settings.GunSlotCount = 3;
-            Settings.IncreaseSlotKey = "";
-            Settings.DecreaseSlotKey = "";
+            Settings.ActiveSlots = "1,2,3";
 
             Settings.GlobalSuspendKey = "";
 
@@ -421,13 +420,6 @@ namespace PrisonLifeMacro
                     "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
-            int slots;
-            if (!int.TryParse(GunSlotCountInput.Text.Trim(), out slots) || slots < 1 || slots > 10)
-            {
-                MessageBox.Show(this, "Gun Slots must be a whole number between 1 and 10.",
-                    "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
-                return;
-            }
             int clipDelay;
             if (!int.TryParse(ClipDelayInput.Text.Trim(), out clipDelay) || clipDelay < 0 || clipDelay > 10000)
             {
@@ -438,7 +430,6 @@ namespace PrisonLifeMacro
 
             Settings.CS = cs;
             Settings.FPS = fps;
-            Settings.GunSlotCount = slots;
             Settings.PressureJumpEnabled = PJEnabledCB.IsChecked == true;
             Settings.PressureJumpFreeze = PJFreezeCB.IsChecked == true;
             Settings.ClipEnabled = ClipEnabledCB.IsChecked == true;
@@ -461,6 +452,12 @@ namespace PrisonLifeMacro
             Settings.AutoComboShotgunSlot = shotgunSlot;
             Settings.FastGunSwapEnabled = FGSEnabledCB.IsChecked == true;
             Settings.FastGunSwapMode = FGSModeToggle.IsChecked == true ? "Toggle" : "Hold";
+            int fgsDelay;
+            if (!int.TryParse(FGSDelayInput.Text.Trim(), out fgsDelay) || fgsDelay < 0)
+                fgsDelay = 0;
+            if (fgsDelay > 500) fgsDelay = 500;
+            Settings.FastGunSwapDelayMs = fgsDelay;
+            FGSDelayInput.Text = fgsDelay.ToString();
             Settings.ShuffleReloadEnabled = SREnabledCB.IsChecked == true;
             Settings.StartMinimized = StartMinCB.IsChecked == true;
 

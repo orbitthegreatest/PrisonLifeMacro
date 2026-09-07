@@ -397,45 +397,18 @@
                         </StackPanel>
                     </Border>
 
-                    <!-- MAIN GUN SLOTS -->
+                    <!-- WEAPON SLOTS -->
                     <Border Style="{StaticResource PanelBox}" Padding="16,12" Margin="0,12,0,0">
                         <StackPanel>
-                            <TextBlock Text="MAIN GUN SLOTS  (shared by Fast Gun Swap &amp; Shuffle Reload)"
+                            <TextBlock Text="WEAPON SLOTS  (shared by Fast Gun Swap, Shuffle Reload &amp; Smart Crouch)"
                                        Style="{StaticResource SectionTitle}"/>
-                            <Grid Margin="0,10,0,0">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="56"/>
-                                    <ColumnDefinition Width="20"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="Auto"/>
-                                </Grid.ColumnDefinitions>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Gun Slots:" Style="{StaticResource InputLabel}"/>
-                                <TextBox Grid.Row="0" Grid.Column="1" x:Name="GunSlotCountInput"
-                                         Style="{StaticResource DarkTextBox}"/>
-                                <TextBlock Grid.Row="0" Grid.Column="3" Text="Increase:" Style="{StaticResource InputLabel}"/>
-                                <TextBlock Grid.Row="0" Grid.Column="4" x:Name="IncSlotHotkeyDisplay"
-                                           Style="{StaticResource HotkeyDisplay}"/>
-                                <Button Grid.Row="0" Grid.Column="5" x:Name="IncSlotResetBtn" Style="{StaticResource ResetButton}"
-                                        Content="Reset" Margin="4,0,0,0" Click="IncSlotResetBtn_Click"/>
-                                <Button Grid.Row="0" Grid.Column="6" x:Name="IncSlotSetBtn" Style="{StaticResource RoundButton}"
-                                        Content="Set Increase Key" Margin="12,0,0,0" Click="IncSlotSetBtn_Click"/>
-                                <TextBlock Grid.Row="1" Grid.Column="3" Text="Decrease:" Style="{StaticResource InputLabel}" Margin="0,10,0,0"/>
-                                <TextBlock Grid.Row="1" Grid.Column="4" x:Name="DecSlotHotkeyDisplay"
-                                           Style="{StaticResource HotkeyDisplay}" Margin="0,10,0,0"/>
-                                <Button Grid.Row="1" Grid.Column="5" x:Name="DecSlotResetBtn" Style="{StaticResource ResetButton}"
-                                        Content="Reset" Margin="4,10,0,0" Click="DecSlotResetBtn_Click"/>
-                                <Button Grid.Row="1" Grid.Column="6" x:Name="DecSlotSetBtn" Style="{StaticResource RoundButton}"
-                                        Content="Set Decrease Key" Margin="12,10,0,0" Click="DecSlotSetBtn_Click"/>
-                            </Grid>
+                            <TextBlock x:Name="ActiveSlotsDisplay" Margin="0,8,0,0" Style="{StaticResource HintText}"
+                                       Text="Active slots: 1, 2, 3"/>
+                            <Button x:Name="BtnWeaponSlots" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
+                                    HorizontalAlignment="Left" Content="Weapon Slot Setup..."
+                                    Click="BtnWeaponSlots_Click"/>
                             <TextBlock Margin="0,10,0,0" Style="{StaticResource HintText}"
-                                       Text="Slots are the first N number-row keys (1-9, 0 = 10th slot). Both macros cycle the exact same slot list."/>
+                                       Text="Click to open the slot picker. Highlight the slots where your weapons are placed. Only those slots will be cycled."/>
                         </StackPanel>
                     </Border>
 
@@ -608,6 +581,13 @@
                             <StackPanel>
                                 <CheckBox x:Name="FGSEnabledCB" Style="{StaticResource DarkCheckBox}"
                                           Content="Enable Fast Gun Swap"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <TextBlock Text="Shoot Delay:" Style="{StaticResource InputLabel}" Width="80"/>
+                                    <TextBox x:Name="FGSDelayInput" Style="{StaticResource DarkTextBox}" Width="50"/>
+                                    <TextBlock Text="ms (default: 1)" Style="{StaticResource InputLabel}" Margin="8,0,0,0"/>
+                                </StackPanel>
+                                <TextBlock Margin="0,8,0,0" Style="{StaticResource HintText}"
+                                           Text="Delay between each slot swap and click. Lower = faster but may cause lag. Increase to 2-5ms if you experience frame drops."/>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HotkeyDisplay}"
                                            Text="Trigger: Left Click (fixed)"/>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}" Text="Mode:"/>

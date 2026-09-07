@@ -298,7 +298,10 @@ namespace PrisonLifeMacro.Core
             {
                 if (SprintHeld)
                 {
-                    Post(CrouchAndReEngageAction);
+                    if (Settings.SmartCrouchEnabled)
+                        Post(SmartCrouchAction);
+                    else
+                        Post(CrouchAndReEngageAction);
                     return true;
                 }
             }
@@ -358,18 +361,6 @@ namespace PrisonLifeMacro.Core
                 vk == KeyNames.NameToVk(Settings.ShuffleReloadKey))
             {
                 if (down && !repeat) Post(ShuffleReloadAction);
-                return false;
-            }
-
-            // ---- Main Gun Slots +/- (pass-through) ----
-            if (!string.IsNullOrEmpty(Settings.IncreaseSlotKey) && vk == KeyNames.NameToVk(Settings.IncreaseSlotKey))
-            {
-                if (down && !repeat) Post(() => ChangeSlotCount(+1));
-                return false;
-            }
-            if (!string.IsNullOrEmpty(Settings.DecreaseSlotKey) && vk == KeyNames.NameToVk(Settings.DecreaseSlotKey))
-            {
-                if (down && !repeat) Post(() => ChangeSlotCount(-1));
                 return false;
             }
 
@@ -678,26 +669,26 @@ namespace PrisonLifeMacro.Core
             _smartCrouchPressCount++;
             bool shouldReload = (_smartCrouchPressCount % 2) == 1;
 
+            Native.SendKeyUp(0x10); // LShift up
+
             if (shouldReload)
             {
                 List<int> slots = BuildActiveSlots();
-                // Build: r1r2r3...rN + last slot again
-                int count = slots.Count;
-                int[] sequence = new int[count * 2 + 2];
-                for (int i = 0; i < count; i++)
+                Native.SendKeyTap(0x52);                 // r - reload current weapon
+                Thread.Sleep(ShuffleReloadInitialDelayMs);
+
+                foreach (var k in slots)
                 {
-                    sequence[i * 2] = 0x52;
-                    sequence[i * 2 + 1] = slots[i];
+                    Native.SendKeyTap(k);                // slot key
+                    Thread.Sleep(ShuffleReloadKeyDelayMs);
+                    Native.SendKeyTap(0x52);             // r
+                    Thread.Sleep(ShuffleReloadKeyDelayMs);
                 }
-                sequence[count * 2] = 0x52;
-                sequence[count * 2 + 1] = slots[count - 1];
-                Native.SendKeyTapSequence(sequence);
-                Thread.Sleep(140);
             }
 
-            Native.SendKeyUp(0x10); // LShift up
-            Native.SendKeyTap(0x43); // c
+            Native.SendKeyTap(0x43); // c - crouch after reload
             Thread.Sleep(10);
+
             if (Settings.SprintEnabled && (Settings.SprintMode == "Toggle" && SprintHeld || Settings.SprintMode == "Always"))
                 Native.SendKeyDown(0x10); // LShift down
         }
@@ -799,22 +790,15 @@ namespace PrisonLifeMacro.Core
         // ------------------------------------------------------------------
         private static List<int> BuildActiveSlots()
         {
-            int count = Settings.GunSlotCount;
-            if (count < 1) count = 1;
-            if (count > 10) count = 10;
-            var slots = new List<int>(count);
-            for (int i = 1; i <= count; i++)
-                slots.Add(i == 10 ? 0x30 : 0x30 + i);     // '1'..'9', '0'
+            var slots = new List<int>();
+            foreach (var s in Settings.ActiveSlots.Split(','))
+            {
+                int n;
+                if (int.TryParse(s.Trim(), out n) && n >= 1 && n <= 9)
+                    slots.Add(0x30 + n); // '1'..'9'
+            }
+            if (slots.Count == 0) { slots.Add(0x31); slots.Add(0x32); slots.Add(0x33); }
             return slots;
-        }
-
-        private void ChangeSlotCount(int delta)
-        {
-            int n = Settings.GunSlotCount + delta;
-            if (n < 1) n = 1;
-            if (n > 10) n = 10;
-            Settings.GunSlotCount = n;
-            ShowFeedback("Main Gun Slots: " + n, 600);
         }
 
         // ------------------------------------------------------------------
@@ -845,9 +829,9 @@ namespace PrisonLifeMacro.Core
                     if (!IsPhysDown(keyVk))
                         break;
                     Native.SendKeyTap(k);
-                    Thread.Sleep(1);
+                    Thread.Sleep(Settings.FastGunSwapDelayMs);
                     Native.Click();
-                    Thread.Sleep(1);
+                    Thread.Sleep(Settings.FastGunSwapDelayMs);
                 }
             }
         }
@@ -874,9 +858,9 @@ namespace PrisonLifeMacro.Core
                 if (!FastGunSwapHolding)
                     break;
                 Native.SendKeyTap(k);
-                Thread.Sleep(1);
+                Thread.Sleep(Settings.FastGunSwapDelayMs);
                 Native.Click();
-                Thread.Sleep(1);
+                Thread.Sleep(Settings.FastGunSwapDelayMs);
             }
             if (FastGunSwapHolding)
                 Post(FastGunSwapLoop);

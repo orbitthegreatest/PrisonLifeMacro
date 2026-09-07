@@ -55,16 +55,15 @@ namespace PrisonLifeMacro.Core
         public static int AutoComboRifleSlot = 1;    // M4A1 / FAL / AK47 / MP5 slot (1-10)
         public static int AutoComboShotgunSlot = 2;  // Shotgun slot (1-10)
 
-        // Main Gun Slots (global)
-        public static int GunSlotCount = 3;
-        public static string IncreaseSlotKey = "";
-        public static string DecreaseSlotKey = "";
+        // Main Gun Slots (shared)
+        public static string ActiveSlots = "1,2,3"; // comma-separated slot numbers
 
         // Fast Gun Swap
         public static string FastGunSwapKey = "";
         public static string FastGunSwapOnOffKey = "";
         public static string FastGunSwapMode = "Hold";
         public static bool FastGunSwapEnabled;
+        public static int FastGunSwapDelayMs = 1;
 
         // Shuffle Reload
         public static string ShuffleReloadKey = "";
@@ -145,16 +144,16 @@ namespace PrisonLifeMacro.Core
             if (AutoComboShotgunSlot < 1) AutoComboShotgunSlot = 1;
             if (AutoComboShotgunSlot > 10) AutoComboShotgunSlot = 10;
 
-            GunSlotCount = (int)Math.Round(ReadDouble("MainGunSlots", "Count", 3));
-            if (GunSlotCount < 1) GunSlotCount = 1;
-            if (GunSlotCount > 10) GunSlotCount = 10;
-            IncreaseSlotKey = Trim(IniRead("MainGunSlots", "IncreaseKey", ""));
-            DecreaseSlotKey = Trim(IniRead("MainGunSlots", "DecreaseKey", ""));
+            ActiveSlots = Trim(IniRead("MainGunSlots", "ActiveSlots", "1,2,3"));
+            if (string.IsNullOrEmpty(ActiveSlots)) ActiveSlots = "1,2,3";
 
             FastGunSwapKey = Trim(IniRead("FastGunSwap", "Hotkey", ""));
             FastGunSwapOnOffKey = Trim(IniRead("FastGunSwap", "OnOffHotkey", ""));
             FastGunSwapMode = Trim(IniRead("FastGunSwap", "Mode", "Hold"));
             FastGunSwapEnabled = ReadBool("FastGunSwap", "Enabled", false);
+            FastGunSwapDelayMs = (int)Math.Round(ReadDouble("FastGunSwap", "DelayMs", 1));
+            if (FastGunSwapDelayMs < 0) FastGunSwapDelayMs = 0;
+            if (FastGunSwapDelayMs > 500) FastGunSwapDelayMs = 500;
 
             ShuffleReloadKey = Trim(IniRead("ShuffleReload", "Hotkey", ""));
             ShuffleReloadEnabled = ReadBool("ShuffleReload", "Enabled", false);
@@ -203,14 +202,13 @@ namespace PrisonLifeMacro.Core
             IniWrite("AutoCombo", "RifleSlot", AutoComboRifleSlot.ToString());
             IniWrite("AutoCombo", "ShotgunSlot", AutoComboShotgunSlot.ToString());
 
-            IniWrite("MainGunSlots", "Count", GunSlotCount.ToString());
-            IniWrite("MainGunSlots", "IncreaseKey", IncreaseSlotKey);
-            IniWrite("MainGunSlots", "DecreaseKey", DecreaseSlotKey);
+            IniWrite("MainGunSlots", "ActiveSlots", ActiveSlots);
 
             IniWrite("FastGunSwap", "Hotkey", FastGunSwapKey);
             IniWrite("FastGunSwap", "OnOffHotkey", FastGunSwapOnOffKey);
             IniWrite("FastGunSwap", "Mode", FastGunSwapMode);
             IniWrite("FastGunSwap", "Enabled", FastGunSwapEnabled ? "1" : "0");
+            IniWrite("FastGunSwap", "DelayMs", FastGunSwapDelayMs.ToString());
 
             IniWrite("ShuffleReload", "Hotkey", ShuffleReloadKey);
             IniWrite("ShuffleReload", "Enabled", ShuffleReloadEnabled ? "1" : "0");
