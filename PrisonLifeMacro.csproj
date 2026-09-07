@@ -32,8 +32,8 @@
 
   <ItemGroup>
     <EmbeddedResource Include="PrisonLifeMacro.ico" />
-    <EmbeddedResource Include="windivert\SMCWinDivert.dll" LogicalName="SMCDriver.dll" />
-    <EmbeddedResource Include="windivert\SMCWinDivert64.sys" LogicalName="SMCDriver.sys" />
+    <EmbeddedResource Include="windivert\ORBPLMWinDivert.dll" LogicalName="ORBPLMDriver.dll" />
+    <EmbeddedResource Include="windivert\ORBPLMWinDivert64.sys" LogicalName="ORBPLMDriver.sys" />
   </ItemGroup>
 
 </Project>

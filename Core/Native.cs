@@ -306,7 +306,7 @@ namespace PrisonLifeMacro.Core
         private static WinDivertSendDelegate _wdSend;
         private static WinDivertCloseDelegate _wdClose;
 
-        /// <summary>Loads the SMCWinDivert.dll from the settings dir and binds the entry points.</summary>
+        /// <summary>Loads the ORBPLMWinDivert.dll from the settings dir and binds the entry points.</summary>
         public static bool LoadWinDivert(string dllPath)
         {
             if (_windivertModule != IntPtr.Zero)

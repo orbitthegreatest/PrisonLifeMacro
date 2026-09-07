@@ -35,6 +35,6 @@ jobs:
         with:
           files: |
             artifacts/PrisonLifeMacro.exe
-            windivert/SMCWinDivert.dll
-            windivert/SMCWinDivert64.sys
+            windivert/ORBPLMWinDivert.dll
+            windivert/ORBPLMWinDivert64.sys
           generate_release_notes: true

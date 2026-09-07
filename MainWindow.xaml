@@ -491,7 +491,7 @@
                                 <TextBlock Margin="0,16,0,0" Style="{StaticResource HintText}"
                                            Text="Toggle that blocks Roblox network packets (WinDivert) to lag the server. Runs at Admin rights."/>
                                 <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}"
-                                           Text="Drivers (SMCWinDivert.dll / .sys) are downloaded into %localappdata%\PrisonLifeMacro on first launch."/>
+                                           Text="Drivers (ORBPLMWinDivert.dll / .sys) are downloaded into %localappdata%\PrisonLifeMacro on first launch."/>
                             </StackPanel>
                         </TabItem>
 

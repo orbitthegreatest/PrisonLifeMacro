@@ -7,7 +7,7 @@ using System.Runtime.InteropServices;
 namespace PrisonLifeMacro.Core
 {
     /// <summary>
-    /// Makes the SMCWinDivert DLL + sys driver files available in the settings
+    /// Makes the ORBPLMWinDivert DLL + sys driver files available in the settings
     /// folder (%localappdata%\PrisonLifeMacro) on first launch. The files are
     /// embedded inside the exe and extracted when the app runs; if for some
     /// reason they aren't embedded, they're pulled from this repo's GitHub
@@ -15,12 +15,12 @@ namespace PrisonLifeMacro.Core
     /// </summary>
     public static class DriverInstaller
     {
-        public const string DllName = "SMCWinDivert.dll";
-        public const string SysName = "SMCWinDivert64.sys";
+        public const string DllName = "ORBPLMWinDivert.dll";
+        public const string SysName = "ORBPLMWinDivert64.sys";
         public const string WinDivertSysName = "WinDivert64.sys";
 
-        private const string DllRes = "SMCDriver.dll";
-        private const string SysRes = "SMCDriver.sys";
+        private const string DllRes = "ORBPLMDriver.dll";
+        private const string SysRes = "ORBPLMDriver.sys";
 
         public const string Repo = "orbitthegreatest/PrisonLifeMacro";
         public const string BaseUrl = "https://github.com/" + Repo + "/releases/latest/download/";
