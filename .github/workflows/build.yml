@@ -23,6 +23,20 @@ jobs:
       - name: Publish release build
         run: dotnet publish PrisonLifeMacro.csproj -c Release -o artifacts --nologo
 
+      - name: Sign with SignPath
+        if: env.SIGNPATH_API_TOKEN != ''
+        uses: signpath/signpath-github-action/sign-path@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: PrisonLifeMacro
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: exe
+          wait-for-completion: true
+          output-artifact-path: artifacts/PrisonLifeMacro.exe
+        env:
+          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+
       - name: Upload exe as build artifact
         uses: actions/upload-artifact@v4
         with:
