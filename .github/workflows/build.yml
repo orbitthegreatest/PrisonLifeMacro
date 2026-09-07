@@ -23,19 +23,36 @@ jobs:
       - name: Publish release build
         run: dotnet publish PrisonLifeMacro.csproj -c Release -o artifacts --nologo
 
+      - name: Upload unsigned artifact
+        id: upload-unsigned
+        uses: actions/upload-artifact@v4
+        with:
+          name: PrisonLifeMacro-unsigned
+          path: artifacts/PrisonLifeMacro.exe
+          retention-days: 1
+
       - name: Sign with SignPath
-        if: env.SIGNPATH_API_TOKEN != ''
-        uses: signpath/signpath-github-action/sign-path@v1
+        if: ${{ vars.SIGNPATH_ENABLED == 'true' }}
+        id: signpath
+        uses: signpath/github-action-submit-signing-request@v2
         with:
           api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
           organization-id: ${{ vars.SIGNPATH_ORGANIZATION_ID }}
           project-slug: PrisonLifeMacro
           signing-policy-slug: release-signing
           artifact-configuration-slug: exe
+          github-artifact-id: ${{ steps.upload-unsigned.outputs.artifact-id }}
           wait-for-completion: true
-          output-artifact-path: artifacts/PrisonLifeMacro.exe
-        env:
-          SIGNPATH_API_TOKEN: ${{ secrets.SIGNPATH_API_TOKEN }}
+          output-artifact-directory: signed-artifact
+
+      - name: Use signed exe if available
+        if: ${{ vars.SIGNPATH_ENABLED == 'true' }}
+        shell: pwsh
+        run: |
+          if (Test-Path signed-artifact/PrisonLifeMacro.exe) {
+            Copy-Item signed-artifact/PrisonLifeMacro.exe artifacts/PrisonLifeMacro.exe -Force
+            Write-Host "Using signed executable"
+          }
 
       - name: Upload exe as build artifact
         uses: actions/upload-artifact@v4
