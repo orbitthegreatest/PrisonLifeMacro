@@ -43,7 +43,7 @@ namespace PrisonLifeMacro.Core
 
         // Sprint
         public static bool SprintEnabled;
-        public static string SprintMode = "Toggle"; // "Default", "Toggle", "Always"
+        public static string SprintMode = "Default"; // "Default", "Toggle", "Always"
 
         // Smart Crouch
         public static bool SmartCrouchEnabled;
@@ -126,8 +126,8 @@ namespace PrisonLifeMacro.Core
             RotationEnabled = ReadBool("Rotation", "Enabled", false);
 
             SprintEnabled = ReadBool("Sprint", "Enabled", false);
-            SprintMode = Trim(IniRead("Sprint", "Mode", "Toggle"));
-            if (SprintMode != "Default" && SprintMode != "Always") SprintMode = "Toggle";
+            SprintMode = Trim(IniRead("Sprint", "Mode", "Default"));
+            if (SprintMode != "Default" && SprintMode != "Always") SprintMode = "Default";
             SprintEnabled = SprintMode != "Default";
 
             SmartCrouchEnabled = ReadBool("SmartCrouch", "Enabled", false);
