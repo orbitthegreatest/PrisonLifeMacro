@@ -90,6 +90,8 @@ namespace PrisonLifeMacro
             ACSuspendHotkeyDisplay.Text = KeyDisplay(Settings.AutoComboSuspendKey);
             ACClickModeToggle.IsChecked = Settings.AutoComboClickMode == "Toggle";
             ACClickModeHold.IsChecked = Settings.AutoComboClickMode == "Hold";
+            ACRifleSlotInput.Text = Settings.AutoComboRifleSlot.ToString();
+            ACShotgunSlotInput.Text = Settings.AutoComboShotgunSlot.ToString();
 
             IncSlotHotkeyDisplay.Text = KeyDisplay(Settings.IncreaseSlotKey);
             DecSlotHotkeyDisplay.Text = KeyDisplay(Settings.DecreaseSlotKey);
@@ -382,6 +384,8 @@ namespace PrisonLifeMacro
             Settings.AutoComboEnabled = false;
             Settings.AutoComboSuspendKey = "";
             Settings.AutoComboClickMode = "Toggle";
+            Settings.AutoComboRifleSlot = 1;
+            Settings.AutoComboShotgunSlot = 2;
 
             Settings.FastGunSwapEnabled = false;
             Settings.FastGunSwapOnOffKey = "";
@@ -448,6 +452,13 @@ namespace PrisonLifeMacro
             Settings.SmartCrouchEnabled = SCEnabledCB.IsChecked == true;
             Settings.AutoComboEnabled = ACEnabledCB.IsChecked == true;
             Settings.AutoComboClickMode = ACClickModeToggle.IsChecked == true ? "Toggle" : "Hold";
+            int rifleSlot, shotgunSlot;
+            if (!int.TryParse(ACRifleSlotInput.Text.Trim(), out rifleSlot) || rifleSlot < 1 || rifleSlot > 10)
+                rifleSlot = 1;
+            if (!int.TryParse(ACShotgunSlotInput.Text.Trim(), out shotgunSlot) || shotgunSlot < 1 || shotgunSlot > 10)
+                shotgunSlot = 2;
+            Settings.AutoComboRifleSlot = rifleSlot;
+            Settings.AutoComboShotgunSlot = shotgunSlot;
             Settings.FastGunSwapEnabled = FGSEnabledCB.IsChecked == true;
             Settings.FastGunSwapMode = FGSModeToggle.IsChecked == true ? "Toggle" : "Hold";
             Settings.ShuffleReloadEnabled = SREnabledCB.IsChecked == true;

@@ -682,6 +682,16 @@
                                             Content="Click, then press key/button for Auto Combo Suspend..."
                                             Margin="8,0,0,0" Click="ACSuspendSetBtn_Click"/>
                                 </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                    <TextBlock Text="Rifle Slot:" Style="{StaticResource InputLabel}" Width="80"/>
+                                    <TextBox x:Name="ACRifleSlotInput" Style="{StaticResource DarkTextBox}" Width="40"/>
+                                    <TextBlock Text="(M4A1 / FAL / AK47 / MP5)" Style="{StaticResource InputLabel}" Margin="8,0,0,0"/>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <TextBlock Text="Shotgun Slot:" Style="{StaticResource InputLabel}" Width="80"/>
+                                    <TextBox x:Name="ACShotgunSlotInput" Style="{StaticResource DarkTextBox}" Width="40"/>
+                                    <TextBlock Text="(slot number 1-10)" Style="{StaticResource InputLabel}" Margin="8,0,0,0"/>
+                                </StackPanel>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}" Text="Click Mode:"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                                     <RadioButton x:Name="ACClickModeToggle" Style="{StaticResource DarkRadio}"
@@ -692,7 +702,7 @@
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}"
                                            Text="Auto combos with shotgun and M4A1. Cycles between slot 2 (shotgun) and slot 1 (M4A1) with timed clicks, plus a slot 3 burst every 4 cycles."/>
                                 <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}" Foreground="{StaticResource YellowBrush}"
-                                           Text="WARNING: M4A1 must be in slot 1 and shotgun in slot 2, or the macro will not work correctly!"/>
+                                           Text="WARNING: Set the correct slots above for your rifle and shotgun, or the macro will not work correctly!"/>
                                 <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}"
                                            Text="Press the Suspend key to arm/disarm the combo. When armed, Left click triggers the combo sequence."/>
                             </StackPanel>

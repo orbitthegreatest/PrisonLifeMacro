@@ -52,6 +52,8 @@ namespace PrisonLifeMacro.Core
         public static bool AutoComboEnabled;
         public static string AutoComboSuspendKey = "";
         public static string AutoComboClickMode = "Toggle"; // "Toggle", "Hold"
+        public static int AutoComboRifleSlot = 1;    // M4A1 / FAL / AK47 / MP5 slot (1-10)
+        public static int AutoComboShotgunSlot = 2;  // Shotgun slot (1-10)
 
         // Main Gun Slots (global)
         public static int GunSlotCount = 3;
@@ -136,6 +138,12 @@ namespace PrisonLifeMacro.Core
             AutoComboSuspendKey = Trim(IniRead("AutoCombo", "SuspendKey", ""));
             AutoComboClickMode = Trim(IniRead("AutoCombo", "ClickMode", "Toggle"));
             if (AutoComboClickMode != "Hold") AutoComboClickMode = "Toggle";
+            AutoComboRifleSlot = (int)Math.Round(ReadDouble("AutoCombo", "RifleSlot", 1));
+            if (AutoComboRifleSlot < 1) AutoComboRifleSlot = 1;
+            if (AutoComboRifleSlot > 10) AutoComboRifleSlot = 10;
+            AutoComboShotgunSlot = (int)Math.Round(ReadDouble("AutoCombo", "ShotgunSlot", 2));
+            if (AutoComboShotgunSlot < 1) AutoComboShotgunSlot = 1;
+            if (AutoComboShotgunSlot > 10) AutoComboShotgunSlot = 10;
 
             GunSlotCount = (int)Math.Round(ReadDouble("MainGunSlots", "Count", 3));
             if (GunSlotCount < 1) GunSlotCount = 1;
@@ -192,6 +200,8 @@ namespace PrisonLifeMacro.Core
             IniWrite("AutoCombo", "Enabled", AutoComboEnabled ? "1" : "0");
             IniWrite("AutoCombo", "SuspendKey", AutoComboSuspendKey);
             IniWrite("AutoCombo", "ClickMode", AutoComboClickMode);
+            IniWrite("AutoCombo", "RifleSlot", AutoComboRifleSlot.ToString());
+            IniWrite("AutoCombo", "ShotgunSlot", AutoComboShotgunSlot.ToString());
 
             IniWrite("MainGunSlots", "Count", GunSlotCount.ToString());
             IniWrite("MainGunSlots", "IncreaseKey", IncreaseSlotKey);

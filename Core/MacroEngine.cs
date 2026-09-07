@@ -745,8 +745,8 @@ namespace PrisonLifeMacro.Core
 
             long cycleStart = Environment.TickCount;
 
-            // --- Slot 2 (shotgun): tap 2, wait 60ms, click hold 70ms ---
-            Native.SendKeyTap(0x32);
+            // --- Shotgun slot: tap, wait 60ms, click hold 70ms ---
+            Native.SendKeyTap(SlotToVk(Settings.AutoComboShotgunSlot));
             Thread.Sleep(60);
             Native.MouseDown(0x01);
             Thread.Sleep(70);
@@ -754,8 +754,8 @@ namespace PrisonLifeMacro.Core
 
             if (!AutoComboHolding) { AutoComboHolding = false; return; }
 
-            // --- Slot 1 (m4a1): tap 1, wait 25ms, click hold ---
-            Native.SendKeyTap(0x31);
+            // --- Rifle slot (M4A1/FAL/AK47/MP5): tap, wait 25ms, click hold ---
+            Native.SendKeyTap(SlotToVk(Settings.AutoComboRifleSlot));
             Thread.Sleep(25);
             Native.MouseDown(0x01);
             long holdStart = Environment.TickCount;
@@ -784,6 +784,14 @@ namespace PrisonLifeMacro.Core
                 Post(AutoComboLoop);
             else
                 AutoComboHolding = false;
+        }
+
+        private static int SlotToVk(int slot)
+        {
+            // Slot 1-9 → keys 1-9, Slot 10 → key 0
+            if (slot >= 1 && slot <= 9) return 0x30 + slot; // 0x31='1' .. 0x39='9'
+            if (slot == 10) return 0x30; // '0' key
+            return 0x31; // fallback to '1'
         }
 
         // ------------------------------------------------------------------
