@@ -17,19 +17,7 @@ Target process is fixed to `RobloxPlayerBeta.exe`.
 
 ```
 dotnet publish PrisonLifeMacro.csproj -c Release -o artifacts
-```
 
-The `.exe` in the release needs nothing installed - it runs on any Windows 10/11.
-
-## Releases
-
-Tag a new version (`v4.0.0`) and push it - the GitHub Actions workflow
-(`.github/workflows/build.yml`) builds the exe automatically and attaches it
-to the release:
-
-```
-git tag v4.0.0
-git push origin v4.0.0
 ```
 
 ## Settings
