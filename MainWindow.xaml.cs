@@ -97,6 +97,17 @@ namespace PrisonLifeMacro
 
             GSuspendHotkeyDisplay.Text = KeyDisplay(Settings.GlobalSuspendKey);
 
+            // Initialize staging from current Settings
+            _stagedPJ = Settings.PressureJumpKey;
+            _stagedClip = Settings.ClipKey;
+            _stagedLag = Settings.LagSwitchKey;
+            _stagedFreeze = Settings.FreezeKey;
+            _stagedRot = Settings.RotationKey;
+            _stagedFGSOnOff = Settings.FastGunSwapOnOffKey;
+            _stagedSR = Settings.ShuffleReloadKey;
+            _stagedACSuspend = Settings.AutoComboSuspendKey;
+            _stagedGSuspend = Settings.GlobalSuspendKey;
+
             FGSEnabledCB.IsChecked = Settings.FastGunSwapEnabled;
             FGSDelayInput.Text = Settings.FastGunSwapDelayMs.ToString();
             FGSOnOffHotkeyDisplay.Text = KeyDisplay(Settings.FastGunSwapOnOffKey);
@@ -236,10 +247,14 @@ namespace PrisonLifeMacro
         }
 
         // ------------------------------------------------------------------
-        // Capture flow
+        // Capture flow — hotkeys staged, applied only on Save
         // ------------------------------------------------------------------
         private string _captureButtonText;
         private Button _captureButton;
+
+        // Staging: keybinds are written here first, pushed to Settings on Save
+        private string _stagedPJ, _stagedClip, _stagedLag, _stagedFreeze, _stagedRot;
+        private string _stagedFGSOnOff, _stagedSR, _stagedACSuspend, _stagedGSuspend;
 
         private void StartCapture(string target, Button button, string defaultText)
         {
@@ -267,30 +282,30 @@ namespace PrisonLifeMacro
 
             switch (target)
             {
-                case "PJ": Settings.PressureJumpKey = name; break;
-                case "Clip": Settings.ClipKey = name; break;
-                case "LagSwitch": Settings.LagSwitchKey = name; break;
-                case "Freeze": Settings.FreezeKey = name; break;
-                case "Rotation": Settings.RotationKey = name; break;
-                case "FGSOnOff": Settings.FastGunSwapOnOffKey = name; break;
-                case "SR": Settings.ShuffleReloadKey = name; break;
-                case "ACSuspend": Settings.AutoComboSuspendKey = name; break;
-                case "GSuspend": Settings.GlobalSuspendKey = name; break;
+                case "PJ": _stagedPJ = name; break;
+                case "Clip": _stagedClip = name; break;
+                case "LagSwitch": _stagedLag = name; break;
+                case "Freeze": _stagedFreeze = name; break;
+                case "Rotation": _stagedRot = name; break;
+                case "FGSOnOff": _stagedFGSOnOff = name; break;
+                case "SR": _stagedSR = name; break;
+                case "ACSuspend": _stagedACSuspend = name; break;
+                case "GSuspend": _stagedGSuspend = name; break;
             }
             RefreshDisplays();
         }
 
         private void RefreshDisplays()
         {
-            PJHotkeyDisplay.Text = KeyDisplay(Settings.PressureJumpKey);
-            ClipHotkeyDisplay.Text = KeyDisplay(Settings.ClipKey);
-            LagHotkeyDisplay.Text = KeyDisplay(Settings.LagSwitchKey);
-            FreezeHotkeyDisplay.Text = KeyDisplay(Settings.FreezeKey);
-            RotHotkeyDisplay.Text = KeyDisplay(Settings.RotationKey);
-            FGSOnOffHotkeyDisplay.Text = KeyDisplay(Settings.FastGunSwapOnOffKey);
-            SRHotkeyDisplay.Text = KeyDisplay(Settings.ShuffleReloadKey);
-            ACSuspendHotkeyDisplay.Text = KeyDisplay(Settings.AutoComboSuspendKey);
-            GSuspendHotkeyDisplay.Text = KeyDisplay(Settings.GlobalSuspendKey);
+            PJHotkeyDisplay.Text = KeyDisplay(_stagedPJ);
+            ClipHotkeyDisplay.Text = KeyDisplay(_stagedClip);
+            LagHotkeyDisplay.Text = KeyDisplay(_stagedLag);
+            FreezeHotkeyDisplay.Text = KeyDisplay(_stagedFreeze);
+            RotHotkeyDisplay.Text = KeyDisplay(_stagedRot);
+            FGSOnOffHotkeyDisplay.Text = KeyDisplay(_stagedFGSOnOff);
+            SRHotkeyDisplay.Text = KeyDisplay(_stagedSR);
+            ACSuspendHotkeyDisplay.Text = KeyDisplay(_stagedACSuspend);
+            GSuspendHotkeyDisplay.Text = KeyDisplay(_stagedGSuspend);
         }
 
         // ------------------------------------------------------------------
@@ -313,15 +328,15 @@ namespace PrisonLifeMacro
         {
             switch (target)
             {
-                case "PJ": Settings.PressureJumpKey = ""; break;
-                case "Clip": Settings.ClipKey = ""; break;
-                case "LagSwitch": Settings.LagSwitchKey = ""; break;
-                case "Freeze": Settings.FreezeKey = ""; break;
-                case "Rotation": Settings.RotationKey = ""; break;
-                case "FGSOnOff": Settings.FastGunSwapOnOffKey = ""; break;
-                case "SR": Settings.ShuffleReloadKey = ""; break;
-                case "ACSuspend": Settings.AutoComboSuspendKey = ""; break;
-                case "GSuspend": Settings.GlobalSuspendKey = ""; break;
+                case "PJ": _stagedPJ = ""; break;
+                case "Clip": _stagedClip = ""; break;
+                case "LagSwitch": _stagedLag = ""; break;
+                case "Freeze": _stagedFreeze = ""; break;
+                case "Rotation": _stagedRot = ""; break;
+                case "FGSOnOff": _stagedFGSOnOff = ""; break;
+                case "SR": _stagedSR = ""; break;
+                case "ACSuspend": _stagedACSuspend = ""; break;
+                case "GSuspend": _stagedGSuspend = ""; break;
             }
             display.Text = "(none)";
         }
@@ -460,6 +475,17 @@ namespace PrisonLifeMacro
             FGSDelayInput.Text = fgsDelay.ToString();
             Settings.ShuffleReloadEnabled = SREnabledCB.IsChecked == true;
             Settings.StartMinimized = StartMinCB.IsChecked == true;
+
+            // Push staged hotkeys to Settings
+            Settings.PressureJumpKey = _stagedPJ ?? "";
+            Settings.ClipKey = _stagedClip ?? "";
+            Settings.LagSwitchKey = _stagedLag ?? "";
+            Settings.FreezeKey = _stagedFreeze ?? "";
+            Settings.RotationKey = _stagedRot ?? "";
+            Settings.FastGunSwapOnOffKey = _stagedFGSOnOff ?? "";
+            Settings.ShuffleReloadKey = _stagedSR ?? "";
+            Settings.AutoComboSuspendKey = _stagedACSuspend ?? "";
+            Settings.GlobalSuspendKey = _stagedGSuspend ?? "";
 
             _engine.RecalculatePixels();
             Settings.Save();
