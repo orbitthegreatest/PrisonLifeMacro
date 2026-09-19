@@ -41,6 +41,11 @@ namespace PrisonLifeMacro.Core
         public static string RotationKey = "";
         public static bool RotationEnabled;
 
+        // Spin Macro (Speedglitch)
+        public static string SpinMacroKey = "";
+        public static bool SpinMacroEnabled;
+        public static string SpinMacroMode = "Toggle"; // "Toggle", "Hold"
+
         // Sprint
         public static bool SprintEnabled;
         public static string SprintMode = "Default"; // "Default", "Toggle", "Always"
@@ -126,6 +131,11 @@ namespace PrisonLifeMacro.Core
             RotationKey = Trim(IniRead("Rotation", "Hotkey", ""));
             RotationEnabled = ReadBool("Rotation", "Enabled", false);
 
+            SpinMacroKey = Trim(IniRead("SpinMacro", "Hotkey", ""));
+            SpinMacroEnabled = ReadBool("SpinMacro", "Enabled", false);
+            SpinMacroMode = Trim(IniRead("SpinMacro", "Mode", "Toggle"));
+            if (SpinMacroMode != "Hold") SpinMacroMode = "Toggle";
+
             SprintEnabled = ReadBool("Sprint", "Enabled", false);
             SprintMode = Trim(IniRead("Sprint", "Mode", "Default"));
             if (SprintMode != "Default" && SprintMode != "Always") SprintMode = "Default";
@@ -190,6 +200,10 @@ namespace PrisonLifeMacro.Core
 
             IniWrite("Rotation", "Hotkey", RotationKey);
             IniWrite("Rotation", "Enabled", RotationEnabled ? "1" : "0");
+
+            IniWrite("SpinMacro", "Hotkey", SpinMacroKey);
+            IniWrite("SpinMacro", "Enabled", SpinMacroEnabled ? "1" : "0");
+            IniWrite("SpinMacro", "Mode", SpinMacroMode);
 
             IniWrite("Sprint", "Enabled", SprintEnabled ? "1" : "0");
             IniWrite("Sprint", "Mode", SprintMode);

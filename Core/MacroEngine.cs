@@ -29,7 +29,7 @@ namespace PrisonLifeMacro.Core
         private const bool RotationLeftFlick = false;
         private const bool RotationJumpDuring = false;
         private const bool RotationFlickBack = true;
-        private const int RotationFlickBackDelayMs = 200;
+        private const int RotationFlickBackDelayMs = 19;
 
         // Pressure Jump. The freeze branch uses the Speedglitch-style spin from
         // Spencer-Macro-Utilities: per-move pixel is sensitivity-driven and it alternates
@@ -54,6 +54,8 @@ namespace PrisonLifeMacro.Core
         public volatile bool SmartCrouchActive;
         public volatile bool AutoComboOn;
         public volatile bool AutoComboHolding;
+        public volatile bool SpinMacroOn;
+        public volatile bool SpinMacroHolding;
         public string CaptureTarget;
 
         private int _smartCrouchPressCount;
@@ -111,6 +113,7 @@ namespace PrisonLifeMacro.Core
             }
             FastGunSwapHolding = false;
             AutoComboHolding = false;
+            SpinMacroHolding = false;
             LagSwitch.Stop();
             lock (_physLock) _physDown.Clear();
             _actions.CompleteAdding();
@@ -268,6 +271,22 @@ namespace PrisonLifeMacro.Core
             {
                 if (down && !repeat) Post(RotationAction);
                 return false;
+            }
+
+            // ---- Spin Macro (consumed) ----
+            if (Settings.SpinMacroEnabled && !string.IsNullOrEmpty(Settings.SpinMacroKey) &&
+                vk == KeyNames.NameToVk(Settings.SpinMacroKey))
+            {
+                if (Settings.SpinMacroMode == "Hold")
+                {
+                    if (down && !repeat) Post(SpinMacroHoldStart);
+                    if (up) Post(SpinMacroHoldStop);
+                }
+                else
+                {
+                    if (down && !repeat) Post(SpinMacroToggle);
+                }
+                return true;
             }
 
             // ---- Sprint (Shift, consumed only when Toggle or Always) ----
@@ -582,6 +601,62 @@ namespace PrisonLifeMacro.Core
                 if (remaining > 0) Thread.Sleep(remaining);
                 Native.SendKeyUp(KeyNames.NameToVk("Space"));
             }
+        }
+
+        // ------------------------------------------------------------------
+        // Spin Macro (Speedglitch) — continuous alternating mouse movement
+        // at frame rate, with toggle or hold mode. DPI-scaled via RecalculatePixels.
+        // ------------------------------------------------------------------
+        private void SpinMacroToggle()
+        {
+            RecalculatePixels();
+            SpinMacroOn = !SpinMacroOn;
+            if (SpinMacroOn)
+            {
+                SpinMacroHolding = true;
+                Post(SpinMacroLoop);
+            }
+            else
+            {
+                SpinMacroHolding = false;
+            }
+            ShowFeedback("Spin: " + (SpinMacroOn ? "ON" : "OFF"), 600);
+        }
+
+        private void SpinMacroHoldStart()
+        {
+            if (SpinMacroHolding) return;
+            RecalculatePixels();
+            SpinMacroOn = true;
+            SpinMacroHolding = true;
+            Post(SpinMacroLoop);
+        }
+
+        private void SpinMacroHoldStop()
+        {
+            SpinMacroHolding = false;
+            SpinMacroOn = false;
+        }
+
+        private void SpinMacroLoop()
+        {
+            if (!SpinMacroHolding || !Settings.SpinMacroEnabled || !SpinMacroOn || GlobalSuspended)
+            {
+                SpinMacroHolding = false;
+                SpinMacroOn = false;
+                return;
+            }
+
+            int delay = FrameDelayMs();
+            Native.MoveMouse(PJumpPix, 0);
+            Thread.Sleep(delay);
+            Native.MoveMouse(-PJumpPix, 0);
+            Thread.Sleep(delay);
+
+            if (SpinMacroHolding)
+                Post(SpinMacroLoop);
+            else
+                SpinMacroHolding = false;
         }
 
         // ------------------------------------------------------------------
@@ -925,6 +1000,8 @@ namespace PrisonLifeMacro.Core
                 }
                 FastGunSwapHolding = false;
                 AutoComboHolding = false;
+                SpinMacroHolding = false;
+                SpinMacroOn = false;
                 LagSwitch.SetActive(false);
                 string key = string.IsNullOrEmpty(Settings.GlobalSuspendKey) ? "the suspend key" : Settings.GlobalSuspendKey;
                 ShowFeedback("ALL MACROS SUSPENDED - press " + key + " to resume", 600);

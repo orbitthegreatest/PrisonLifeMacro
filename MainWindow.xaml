@@ -2,7 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Prison Life Macro Settings"
-        Width="760" Height="952"
+        Width="880" Height="952"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         ResizeMode="NoResize" WindowStartupLocation="CenterScreen"
         ShowInTaskbar="True" Topmost="False">
@@ -228,13 +228,19 @@
             <Setter Property="Template">
                 <Setter.Value>
                     <ControlTemplate TargetType="TabItem">
-                        <Border x:Name="B" Background="Transparent" Padding="15,8,15,8" Margin="3,0,3,0"
-                                CornerRadius="10,10,0,0">
-                            <StackPanel>
-                                <TextBlock Text="{TemplateBinding Header}" FontSize="12.5" FontWeight="SemiBold"/>
-                                <Rectangle x:Name="Under" Height="2.5" RadiusX="1.25" RadiusY="1.25"
-                                           Fill="{StaticResource AccentBrush}" Opacity="0" Margin="0,5,0,0"/>
-                            </StackPanel>
+                        <Border x:Name="B" Background="Transparent" Padding="14,9" Margin="0,1"
+                                CornerRadius="8" MinWidth="140">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBlock Grid.Column="0" Text="{TemplateBinding Header}" FontSize="12" FontWeight="SemiBold"
+                                           VerticalAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                <Border x:Name="Under" Grid.Column="1" Width="3" CornerRadius="1.5"
+                                        Background="{StaticResource AccentBrush}" Opacity="0" Margin="6,0,2,0"
+                                        VerticalAlignment="Stretch"/>
+                            </Grid>
                         </Border>
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsSelected" Value="True">
@@ -257,18 +263,18 @@
                 <Setter.Value>
                     <ControlTemplate TargetType="TabControl">
                         <Grid>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto"/>
-                                <RowDefinition Height="*"/>
-                            </Grid.RowDefinitions>
-                            <Border Grid.Row="0" Background="{StaticResource PanelRaisedBrush}"
-                                    CornerRadius="12,12,0,0" BorderBrush="{StaticResource LineBrush}"
-                                    BorderThickness="1,1,1,0" Padding="8,4,8,0">
-                                <TabPanel IsItemsHost="True" KeyboardNavigation.TabIndex="1"/>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Border Grid.Column="0" Background="{StaticResource PanelRaisedBrush}"
+                                    CornerRadius="12,0,0,12" BorderBrush="{StaticResource LineBrush}"
+                                    BorderThickness="1,1,0,1" Padding="0,8">
+                                <StackPanel IsItemsHost="True" Orientation="Vertical"/>
                             </Border>
-                            <Border Grid.Row="1" Background="{StaticResource PanelBrush}"
-                                    CornerRadius="0,0,12,12" BorderBrush="{StaticResource LineBrush}"
-                                    BorderThickness="1,0,1,1" Padding="18,14">
+                            <Border Grid.Column="1" Background="{StaticResource PanelBrush}"
+                                    CornerRadius="0,12,12,0" BorderBrush="{StaticResource LineBrush}"
+                                    BorderThickness="0,1,1,1" Padding="18,14">
                                 <ContentPresenter ContentSource="SelectedContent"/>
                             </Border>
                         </Grid>
@@ -283,6 +289,58 @@
             <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
             <Setter Property="BorderThickness" Value="1"/>
             <Setter Property="CornerRadius" Value="14"/>
+        </Style>
+
+        <!-- ======================= Dark scrollbar ======================= -->
+        <Style x:Key="DarkScrollBar" TargetType="ScrollBar">
+            <Setter Property="Width" Value="8"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollBar">
+                        <Grid>
+                            <Border CornerRadius="4" Background="#1A1510"/>
+                            <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                <Track.Thumb>
+                                    <Thumb>
+                                        <Thumb.Template>
+                                            <ControlTemplate TargetType="Thumb">
+                                                <Border x:Name="ThumbBorder" CornerRadius="4"
+                                                        Background="#5A4A38" Margin="1"/>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="ThumbBorder" Property="Background" Value="#8A6A48"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Thumb.Template>
+                                    </Thumb>
+                                </Track.Thumb>
+                            </Track>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style x:Key="DarkScrollViewer" TargetType="ScrollViewer">
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ScrollViewer">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="12"/>
+                            </Grid.ColumnDefinitions>
+                            <ScrollContentPresenter Grid.Column="0"/>
+                            <ScrollBar Grid.Column="1" x:Name="PART_VerticalScrollBar"
+                                       Style="{StaticResource DarkScrollBar}"
+                                       Value="{TemplateBinding VerticalOffset}"
+                                       Maximum="{TemplateBinding ScrollableHeight}"
+                                       ViewportSize="{TemplateBinding ViewportHeight}"
+                                       Visibility="{TemplateBinding ComputedVerticalScrollBarVisibility}"/>
+                        </Grid>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
     </Window.Resources>
@@ -321,7 +379,7 @@
                                Foreground="{StaticResource AccentBrightBrush}"/>
                     <TextBlock x:Name="VersionText" Text="v4.0.5" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource DimBrush}" Margin="0,3,0,0"/>
-                    <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload  |  Smart Crouch  |  Auto Combo  |  Clip  |  Lag Switch"
+                    <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Spin  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload  |  Smart Crouch  |  Auto Combo  |  Clip  |  Lag Switch"
                                FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,9,0,0"/>
                     <TextBlock Text="Shift-tap sprint toggle   -   Global suspend key   -   One-click keybind captures"
                                FontSize="10.5" Foreground="{StaticResource DimBrush}" Margin="0,4,0,0"/>
@@ -371,7 +429,7 @@
 
             <!-- ======================= CONTENT ======================= -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"
-                          Padding="24,12,24,0">
+                          Padding="24,12,24,0" Style="{StaticResource DarkScrollViewer}">
                 <StackPanel>
 
                     <!-- GLOBAL SETTINGS -->
@@ -441,7 +499,7 @@
 
                     <!-- TABS -->
                     <TabControl x:Name="Tabs" Style="{StaticResource DarkTabControl}"
-                                Margin="0,12,0,0" Height="420">
+                                Margin="0,12,0,0" Height="480">
 
                         <!-- Pressure Jump -->
                         <TabItem Header="Pressure Jump" Style="{StaticResource DarkTabItem}">
@@ -552,6 +610,34 @@
                                         Click="RotSetBtn_Click"/>
                                 <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}"
                                            Text="Wallhop flick. Camera flick pixel amount comes from the shared Sensitivity."/>
+                            </StackPanel>
+                        </TabItem>
+
+                        <!-- Spin -->
+                        <TabItem Header="Spin" Style="{StaticResource DarkTabItem}">
+                            <StackPanel>
+                                <CheckBox x:Name="SpinEnabledCB" Style="{StaticResource DarkCheckBox}"
+                                          Content="Enable Spin"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
+                                    <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
+                                    <TextBlock x:Name="SpinHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
+                                    <Button x:Name="SpinResetBtn" Style="{StaticResource ResetButton}"
+                                            Content="Reset" Click="SpinResetBtn_Click"/>
+                                </StackPanel>
+                                <Button x:Name="SpinSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
+                                        HorizontalAlignment="Left"                                         Content="Click, then press key/button for Spin..."
+                                        Click="SpinSetBtn_Click"/>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}" Text="Mode:"/>
+                                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+                                    <RadioButton x:Name="SpinModeToggle" Style="{StaticResource DarkRadio}"
+                                                 Content="Toggle (press once to start/stop)" Margin="0,0,24,0"/>
+                                    <RadioButton x:Name="SpinModeHold" Style="{StaticResource DarkRadio}"
+                                                 Content="Hold (spin while held)"/>
+                                </StackPanel>
+                                <TextBlock Margin="0,12,0,0" Style="{StaticResource HintText}"
+                                           Text="Continuous camera spin at frame rate using the shared Sensitivity value. Works for all display scales."/>
+                                <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}"
+                                           Text="Toggle: press once to start, again to stop. Hold: spins only while the key is held."/>
                             </StackPanel>
                         </TabItem>
 

@@ -80,6 +80,11 @@ namespace PrisonLifeMacro
             RotEnabledCB.IsChecked = Settings.RotationEnabled;
             RotHotkeyDisplay.Text = KeyDisplay(Settings.RotationKey);
 
+            SpinEnabledCB.IsChecked = Settings.SpinMacroEnabled;
+            SpinHotkeyDisplay.Text = KeyDisplay(Settings.SpinMacroKey);
+            SpinModeToggle.IsChecked = Settings.SpinMacroMode == "Toggle";
+            SpinModeHold.IsChecked = Settings.SpinMacroMode == "Hold";
+
             SprModeDefault.IsChecked = Settings.SprintMode == "Default";
             SprModeToggle.IsChecked = Settings.SprintMode == "Toggle";
             SprModeAlways.IsChecked = Settings.SprintMode == "Always";
@@ -103,6 +108,7 @@ namespace PrisonLifeMacro
             _stagedLag = Settings.LagSwitchKey;
             _stagedFreeze = Settings.FreezeKey;
             _stagedRot = Settings.RotationKey;
+            _stagedSpin = Settings.SpinMacroKey;
             _stagedFGSOnOff = Settings.FastGunSwapOnOffKey;
             _stagedSR = Settings.ShuffleReloadKey;
             _stagedACSuspend = Settings.AutoComboSuspendKey;
@@ -180,6 +186,7 @@ namespace PrisonLifeMacro
             AttachButtonHover(LagSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FreezeSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(RotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(SpinSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FGSOnOffSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(SRSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(ACSuspendSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
@@ -191,6 +198,7 @@ namespace PrisonLifeMacro
             AttachButtonHover(LagResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FreezeResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(RotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(SpinResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FGSOnOffResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(SRResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(ACSuspendResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
@@ -253,7 +261,7 @@ namespace PrisonLifeMacro
         private Button _captureButton;
 
         // Staging: keybinds are written here first, pushed to Settings on Save
-        private string _stagedPJ, _stagedClip, _stagedLag, _stagedFreeze, _stagedRot;
+        private string _stagedPJ, _stagedClip, _stagedLag, _stagedFreeze, _stagedRot, _stagedSpin;
         private string _stagedFGSOnOff, _stagedSR, _stagedACSuspend, _stagedGSuspend;
 
         private void StartCapture(string target, Button button, string defaultText)
@@ -287,6 +295,7 @@ namespace PrisonLifeMacro
                 case "LagSwitch": _stagedLag = name; break;
                 case "Freeze": _stagedFreeze = name; break;
                 case "Rotation": _stagedRot = name; break;
+                case "SpinMacro": _stagedSpin = name; break;
                 case "FGSOnOff": _stagedFGSOnOff = name; break;
                 case "SR": _stagedSR = name; break;
                 case "ACSuspend": _stagedACSuspend = name; break;
@@ -302,6 +311,7 @@ namespace PrisonLifeMacro
             LagHotkeyDisplay.Text = KeyDisplay(_stagedLag);
             FreezeHotkeyDisplay.Text = KeyDisplay(_stagedFreeze);
             RotHotkeyDisplay.Text = KeyDisplay(_stagedRot);
+            SpinHotkeyDisplay.Text = KeyDisplay(_stagedSpin);
             FGSOnOffHotkeyDisplay.Text = KeyDisplay(_stagedFGSOnOff);
             SRHotkeyDisplay.Text = KeyDisplay(_stagedSR);
             ACSuspendHotkeyDisplay.Text = KeyDisplay(_stagedACSuspend);
@@ -316,6 +326,7 @@ namespace PrisonLifeMacro
         private void LagSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("LagSwitch", LagSetBtn, "Click, then press key/button for Lag Switch...");
         private void FreezeSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Freeze", FreezeSetBtn, "Click, then press key/button for Freeze...");
         private void RotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Rotation", RotSetBtn, "Click, then press key/button for Rotation...");
+        private void SpinSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("SpinMacro", SpinSetBtn, "Click, then press key/button for Spin...");
         private void FGSOnOffSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("FGSOnOff", FGSOnOffSetBtn, "Click, then press key/button for Fast Gun Swap On/Off...");
         private void SRSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("SR", SRSetBtn, "Click, then press key/button for Shuffle Reload Trigger...");
         private void ACSuspendSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("ACSuspend", ACSuspendSetBtn, "Click, then press key/button for Auto Combo Suspend...");
@@ -333,6 +344,7 @@ namespace PrisonLifeMacro
                 case "LagSwitch": _stagedLag = ""; break;
                 case "Freeze": _stagedFreeze = ""; break;
                 case "Rotation": _stagedRot = ""; break;
+                case "SpinMacro": _stagedSpin = ""; break;
                 case "FGSOnOff": _stagedFGSOnOff = ""; break;
                 case "SR": _stagedSR = ""; break;
                 case "ACSuspend": _stagedACSuspend = ""; break;
@@ -346,6 +358,7 @@ namespace PrisonLifeMacro
         private void LagResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("LagSwitch", LagHotkeyDisplay);
         private void FreezeResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Freeze", FreezeHotkeyDisplay);
         private void RotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Rotation", RotHotkeyDisplay);
+        private void SpinResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("SpinMacro", SpinHotkeyDisplay);
         private void FGSOnOffResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("FGSOnOff", FGSOnOffHotkeyDisplay);
         private void SRResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("SR", SRHotkeyDisplay);
         private void ACSuspendResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("ACSuspend", ACSuspendHotkeyDisplay);
@@ -390,6 +403,10 @@ namespace PrisonLifeMacro
 
             Settings.RotationKey = "";
             Settings.RotationEnabled = false;
+
+            Settings.SpinMacroKey = "";
+            Settings.SpinMacroEnabled = false;
+            Settings.SpinMacroMode = "Toggle";
 
             Settings.SprintMode = "Default";
             Settings.SprintEnabled = false;
@@ -453,6 +470,8 @@ namespace PrisonLifeMacro
             Settings.FreezeEnabled = FreezeEnabledCB.IsChecked == true;
             Settings.FreezeMode = FreezeModeHold.IsChecked == true ? "Hold" : "Toggle";
             Settings.RotationEnabled = RotEnabledCB.IsChecked == true;
+            Settings.SpinMacroEnabled = SpinEnabledCB.IsChecked == true;
+            Settings.SpinMacroMode = SpinModeToggle.IsChecked == true ? "Toggle" : "Hold";
             Settings.SprintMode = SprModeDefault.IsChecked == true ? "Default" : (SprModeAlways.IsChecked == true ? "Always" : "Toggle");
             Settings.SprintEnabled = Settings.SprintMode != "Default";
             Settings.SmartCrouchEnabled = SCEnabledCB.IsChecked == true;
@@ -482,6 +501,7 @@ namespace PrisonLifeMacro
             Settings.LagSwitchKey = _stagedLag ?? "";
             Settings.FreezeKey = _stagedFreeze ?? "";
             Settings.RotationKey = _stagedRot ?? "";
+            Settings.SpinMacroKey = _stagedSpin ?? "";
             Settings.FastGunSwapOnOffKey = _stagedFGSOnOff ?? "";
             Settings.ShuffleReloadKey = _stagedSR ?? "";
             Settings.AutoComboSuspendKey = _stagedACSuspend ?? "";
@@ -501,6 +521,8 @@ namespace PrisonLifeMacro
                 warnings += "- Freeze is enabled but has no keybind set.\n";
             if (Settings.RotationEnabled && string.IsNullOrEmpty(Settings.RotationKey))
                 warnings += "- Rotation is enabled but has no keybind set.\n";
+            if (Settings.SpinMacroEnabled && string.IsNullOrEmpty(Settings.SpinMacroKey))
+                warnings += "- Spin is enabled but has no keybind set.\n";
             if (Settings.AutoComboEnabled && string.IsNullOrEmpty(Settings.AutoComboSuspendKey))
                 warnings += "- Auto Combo is enabled but has no suspend keybind set.\n";
             if (Settings.ShuffleReloadEnabled && string.IsNullOrEmpty(Settings.ShuffleReloadKey))
