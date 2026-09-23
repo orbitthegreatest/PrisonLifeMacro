@@ -28,6 +28,11 @@ namespace PrisonLifeMacro.Core
         public static int ClipDelayMs = 6;
         public static bool ClipEnabled;
 
+        // Floffy Clip (floffy_freeze_macro.ahk parity)
+        public static string FloffyClipKey = "";
+        public static int FloffyClipDelayMs = 40;
+        public static bool FloffyClipEnabled;
+
         // Lag Switch
         public static string LagSwitchKey = "";
         public static bool LagSwitchEnabled;
@@ -121,6 +126,12 @@ namespace PrisonLifeMacro.Core
             if (ClipDelayMs > 10000) ClipDelayMs = 10000;
             ClipEnabled = ReadBool("Clip", "Enabled", false);
 
+            FloffyClipKey = Trim(IniRead("FloffyClip", "Hotkey", ""));
+            FloffyClipDelayMs = (int)Math.Round(ReadDouble("FloffyClip", "DelayBeforeFreezeMs", 40));
+            if (FloffyClipDelayMs < 0) FloffyClipDelayMs = 0;
+            if (FloffyClipDelayMs > 10000) FloffyClipDelayMs = 10000;
+            FloffyClipEnabled = ReadBool("FloffyClip", "Enabled", false);
+
             LagSwitchKey = Trim(IniRead("LagSwitch", "Hotkey", ""));
             LagSwitchEnabled = ReadBool("LagSwitch", "Enabled", false);
 
@@ -190,6 +201,10 @@ namespace PrisonLifeMacro.Core
             IniWrite("Clip", "Hotkey", ClipKey);
             IniWrite("Clip", "DelayMs", ClipDelayMs.ToString());
             IniWrite("Clip", "Enabled", ClipEnabled ? "1" : "0");
+
+            IniWrite("FloffyClip", "Hotkey", FloffyClipKey);
+            IniWrite("FloffyClip", "DelayBeforeFreezeMs", FloffyClipDelayMs.ToString());
+            IniWrite("FloffyClip", "Enabled", FloffyClipEnabled ? "1" : "0");
 
             IniWrite("LagSwitch", "Hotkey", LagSwitchKey);
             IniWrite("LagSwitch", "Enabled", LagSwitchEnabled ? "1" : "0");

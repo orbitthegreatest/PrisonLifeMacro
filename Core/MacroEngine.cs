@@ -257,6 +257,14 @@ namespace PrisonLifeMacro.Core
                 return true;
             }
 
+            // ---- Floffy Clip (consumed) ----
+            if (Settings.FloffyClipEnabled && !string.IsNullOrEmpty(Settings.FloffyClipKey) &&
+                vk == KeyNames.NameToVk(Settings.FloffyClipKey))
+            {
+                if (down && !repeat) Post(FloffyClipAction);
+                return true;
+            }
+
             // ---- Lag Switch (consumed) ----
             if (Settings.LagSwitchEnabled && !string.IsNullOrEmpty(Settings.LagSwitchKey) &&
                 vk == KeyNames.NameToVk(Settings.LagSwitchKey))
@@ -555,6 +563,45 @@ namespace PrisonLifeMacro.Core
             {
                 Native.SendKeyDown(0x10);
             }
+        }
+
+        // ------------------------------------------------------------------
+        // Floffy Clip (floffy_freeze_macro.ahk parity: space down, c,
+        // PreciseSleep(ClipDelay), suspend, PreciseSleep(300), resume, space up)
+        // ------------------------------------------------------------------
+        private const int FloffyClipFreezeHoldMs = 300;
+
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool QueryPerformanceFrequency(out long frequency);
+        [System.Runtime.InteropServices.DllImport("kernel32.dll")]
+        private static extern bool QueryPerformanceCounter(out long counter);
+
+        /// <summary>AHK PreciseSleep parity - QPC busy-wait, accurate to ~1-5 µs.</summary>
+        private static void PreciseSleep(int ms)
+        {
+            if (ms <= 0) return;
+            long freq, start, now;
+            QueryPerformanceFrequency(out freq);
+            QueryPerformanceCounter(out start);
+            long target = start + (long)Math.Round(ms * (double)freq / 1000.0);
+            do
+            {
+                QueryPerformanceCounter(out now);
+            } while (now < target);
+        }
+
+        private void FloffyClipAction()
+        {
+            int delay = Settings.FloffyClipDelayMs;
+            if (delay < 0) delay = 0;
+
+            Native.SendKeyDown(0x20);                    // Space down
+            Native.SendKeyTap(0x43);                     // c
+            PreciseSleep(delay);                         // clip delay before freeze
+            Native.SuspendProcessByName(TargetProcess);  // freeze
+            PreciseSleep(FloffyClipFreezeHoldMs);        // freeze hold (fixed 300ms)
+            Native.ResumeProcessByName(TargetProcess);   // unfreeze
+            Native.SendKeyUp(0x20);                      // Space up
         }
 
         // ------------------------------------------------------------------

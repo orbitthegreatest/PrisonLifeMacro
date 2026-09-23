@@ -69,6 +69,10 @@ namespace PrisonLifeMacro
             ClipHotkeyDisplay.Text = KeyDisplay(Settings.ClipKey);
             ClipDelayInput.Text = Settings.ClipDelayMs.ToString();
 
+            FloffyClipEnabledCB.IsChecked = Settings.FloffyClipEnabled;
+            FloffyClipHotkeyDisplay.Text = KeyDisplay(Settings.FloffyClipKey);
+            FloffyClipDelayInput.Text = Settings.FloffyClipDelayMs.ToString();
+
             LagEnabledCB.IsChecked = Settings.LagSwitchEnabled;
             LagHotkeyDisplay.Text = KeyDisplay(Settings.LagSwitchKey);
 
@@ -105,6 +109,7 @@ namespace PrisonLifeMacro
             // Initialize staging from current Settings
             _stagedPJ = Settings.PressureJumpKey;
             _stagedClip = Settings.ClipKey;
+            _stagedFloffyClip = Settings.FloffyClipKey;
             _stagedLag = Settings.LagSwitchKey;
             _stagedFreeze = Settings.FreezeKey;
             _stagedRot = Settings.RotationKey;
@@ -183,6 +188,7 @@ namespace PrisonLifeMacro
             AttachButtonHover(BtnAboutUpdates, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(PJSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(ClipSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(FloffyClipSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(LagSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FreezeSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(RotSetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
@@ -195,6 +201,7 @@ namespace PrisonLifeMacro
             AttachButtonHover(BtnResetAll, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(PJResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(ClipResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
+            AttachButtonHover(FloffyClipResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(LagResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(FreezeResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
             AttachButtonHover(RotResetBtn, Color.FromRgb(0x26, 0x20, 0x19), Color.FromRgb(0x33, 0x2A, 0x1F));
@@ -261,7 +268,7 @@ namespace PrisonLifeMacro
         private Button _captureButton;
 
         // Staging: keybinds are written here first, pushed to Settings on Save
-        private string _stagedPJ, _stagedClip, _stagedLag, _stagedFreeze, _stagedRot, _stagedSpin;
+        private string _stagedPJ, _stagedClip, _stagedFloffyClip, _stagedLag, _stagedFreeze, _stagedRot, _stagedSpin;
         private string _stagedFGSOnOff, _stagedSR, _stagedACSuspend, _stagedGSuspend;
 
         private void StartCapture(string target, Button button, string defaultText)
@@ -292,6 +299,7 @@ namespace PrisonLifeMacro
             {
                 case "PJ": _stagedPJ = name; break;
                 case "Clip": _stagedClip = name; break;
+                case "FloffyClip": _stagedFloffyClip = name; break;
                 case "LagSwitch": _stagedLag = name; break;
                 case "Freeze": _stagedFreeze = name; break;
                 case "Rotation": _stagedRot = name; break;
@@ -308,6 +316,7 @@ namespace PrisonLifeMacro
         {
             PJHotkeyDisplay.Text = KeyDisplay(_stagedPJ);
             ClipHotkeyDisplay.Text = KeyDisplay(_stagedClip);
+            FloffyClipHotkeyDisplay.Text = KeyDisplay(_stagedFloffyClip);
             LagHotkeyDisplay.Text = KeyDisplay(_stagedLag);
             FreezeHotkeyDisplay.Text = KeyDisplay(_stagedFreeze);
             RotHotkeyDisplay.Text = KeyDisplay(_stagedRot);
@@ -323,6 +332,7 @@ namespace PrisonLifeMacro
         // ------------------------------------------------------------------
         private void PJSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("PJ", PJSetBtn, "Click, then press key/button for Pressure Jump...");
         private void ClipSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Clip", ClipSetBtn, "Click, then press key/button for Clip...");
+        private void FloffyClipSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("FloffyClip", FloffyClipSetBtn, "Click, then press key/button for Floffy Clip...");
         private void LagSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("LagSwitch", LagSetBtn, "Click, then press key/button for Lag Switch...");
         private void FreezeSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Freeze", FreezeSetBtn, "Click, then press key/button for Freeze...");
         private void RotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Rotation", RotSetBtn, "Click, then press key/button for Rotation...");
@@ -341,6 +351,7 @@ namespace PrisonLifeMacro
             {
                 case "PJ": _stagedPJ = ""; break;
                 case "Clip": _stagedClip = ""; break;
+                case "FloffyClip": _stagedFloffyClip = ""; break;
                 case "LagSwitch": _stagedLag = ""; break;
                 case "Freeze": _stagedFreeze = ""; break;
                 case "Rotation": _stagedRot = ""; break;
@@ -355,6 +366,7 @@ namespace PrisonLifeMacro
 
         private void PJResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("PJ", PJHotkeyDisplay);
         private void ClipResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Clip", ClipHotkeyDisplay);
+        private void FloffyClipResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("FloffyClip", FloffyClipHotkeyDisplay);
         private void LagResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("LagSwitch", LagHotkeyDisplay);
         private void FreezeResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Freeze", FreezeHotkeyDisplay);
         private void RotResetBtn_Click(object s, RoutedEventArgs e) => ResetHotkey("Rotation", RotHotkeyDisplay);
@@ -393,6 +405,10 @@ namespace PrisonLifeMacro
             Settings.ClipKey = "";
             Settings.ClipDelayMs = 6;
             Settings.ClipEnabled = false;
+
+            Settings.FloffyClipKey = "";
+            Settings.FloffyClipDelayMs = 40;
+            Settings.FloffyClipEnabled = false;
 
             Settings.LagSwitchKey = "";
             Settings.LagSwitchEnabled = false;
@@ -459,6 +475,13 @@ namespace PrisonLifeMacro
                     "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
                 return;
             }
+            int floffyClipDelay;
+            if (!int.TryParse(FloffyClipDelayInput.Text.Trim(), out floffyClipDelay) || floffyClipDelay < 0 || floffyClipDelay > 10000)
+            {
+                MessageBox.Show(this, "Delay before freeze must be a whole number of milliseconds between 0 and 10000.",
+                    "Invalid Input", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
 
             Settings.CS = cs;
             Settings.FPS = fps;
@@ -466,6 +489,8 @@ namespace PrisonLifeMacro
             Settings.PressureJumpFreeze = PJFreezeCB.IsChecked == true;
             Settings.ClipEnabled = ClipEnabledCB.IsChecked == true;
             Settings.ClipDelayMs = clipDelay;
+            Settings.FloffyClipEnabled = FloffyClipEnabledCB.IsChecked == true;
+            Settings.FloffyClipDelayMs = floffyClipDelay;
             Settings.LagSwitchEnabled = LagEnabledCB.IsChecked == true;
             Settings.FreezeEnabled = FreezeEnabledCB.IsChecked == true;
             Settings.FreezeMode = FreezeModeHold.IsChecked == true ? "Hold" : "Toggle";
@@ -498,6 +523,7 @@ namespace PrisonLifeMacro
             // Push staged hotkeys to Settings
             Settings.PressureJumpKey = _stagedPJ ?? "";
             Settings.ClipKey = _stagedClip ?? "";
+            Settings.FloffyClipKey = _stagedFloffyClip ?? "";
             Settings.LagSwitchKey = _stagedLag ?? "";
             Settings.FreezeKey = _stagedFreeze ?? "";
             Settings.RotationKey = _stagedRot ?? "";
@@ -515,6 +541,8 @@ namespace PrisonLifeMacro
                 warnings += "- Pressure Jump is enabled but has no keybind set.\n";
             if (Settings.ClipEnabled && string.IsNullOrEmpty(Settings.ClipKey))
                 warnings += "- Clip is enabled but has no keybind set.\n";
+            if (Settings.FloffyClipEnabled && string.IsNullOrEmpty(Settings.FloffyClipKey))
+                warnings += "- Floffy Clip is enabled but has no keybind set.\n";
             if (Settings.LagSwitchEnabled && string.IsNullOrEmpty(Settings.LagSwitchKey))
                 warnings += "- Lag Switch is enabled but has no keybind set.\n";
             if (Settings.FreezeEnabled && string.IsNullOrEmpty(Settings.FreezeKey))
