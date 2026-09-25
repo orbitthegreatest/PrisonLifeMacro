@@ -339,7 +339,7 @@ namespace PrisonLifeMacro
         // ------------------------------------------------------------------
         private void PJSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("PJ", PJSetBtn, "Click, then press key/button for Pressure Jump...");
         private void ClipSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Clip", ClipSetBtn, "Click, then press key/button for Clip...");
-        private void FloffyClipSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("FloffyClip", FloffyClipSetBtn, "Click, then press key/button for Floffy Clip...");
+        private void FloffyClipSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("FloffyClip", FloffyClipSetBtn, "Click, then press key/button for Floofy Clip...");
         private void LagSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("LagSwitch", LagSetBtn, "Click, then press key/button for Lag Switch...");
         private void FreezeSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Freeze", FreezeSetBtn, "Click, then press key/button for Freeze...");
         private void RotSetBtn_Click(object s, RoutedEventArgs e) => StartCapture("Rotation", RotSetBtn, "Click, then press key/button for Rotation...");
@@ -549,7 +549,7 @@ namespace PrisonLifeMacro
             if (Settings.ClipEnabled && string.IsNullOrEmpty(Settings.ClipKey))
                 warnings += "- Clip is enabled but has no keybind set.\n";
             if (Settings.FloffyClipEnabled && string.IsNullOrEmpty(Settings.FloffyClipKey))
-                warnings += "- Floffy Clip is enabled but has no keybind set.\n";
+                warnings += "- Floofy Clip is enabled but has no keybind set.\n";
             if (Settings.LagSwitchEnabled && string.IsNullOrEmpty(Settings.LagSwitchKey))
                 warnings += "- Lag Switch is enabled but has no keybind set.\n";
             if (Settings.FreezeEnabled && string.IsNullOrEmpty(Settings.FreezeKey))

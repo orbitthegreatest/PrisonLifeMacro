@@ -28,7 +28,7 @@ namespace PrisonLifeMacro.Core
         public static int ClipDelayMs = 6;
         public static bool ClipEnabled;
 
-        // Floffy Clip (floffy_freeze_macro.ahk parity)
+        // Floofy Clip (floffy_freeze_macro.ahk parity)
         public static string FloffyClipKey = "";
         public static int FloffyClipDelayMs = 40;
         public static bool FloffyClipEnabled;

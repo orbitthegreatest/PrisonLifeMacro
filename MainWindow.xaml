@@ -379,7 +379,7 @@
                                Foreground="{StaticResource AccentBrightBrush}"/>
                     <TextBlock x:Name="VersionText" Text="v4.0.5" FontSize="11" FontWeight="SemiBold"
                                Foreground="{StaticResource DimBrush}" Margin="0,3,0,0"/>
-                    <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Spin  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload  |  Smart Crouch  |  Auto Combo  |  Clip  |  Floffy Clip  |  Lag Switch"
+                    <TextBlock Text="Pressure Jump  |  Freeze  |  Rotation  |  Spin  |  Sprint  |  Fast Gun Swap  |  Shuffle Reload  |  Smart Crouch  |  Auto Combo  |  Clip  |  Floofy Clip  |  Lag Switch"
                                FontSize="12" Foreground="{StaticResource TextBrush}" Margin="0,9,0,0"/>
                     <TextBlock Text="Shift-tap sprint toggle   -   Global suspend key   -   One-click keybind captures"
                                FontSize="10.5" Foreground="{StaticResource DimBrush}" Margin="0,4,0,0"/>
@@ -551,11 +551,11 @@
                             </StackPanel>
                         </TabItem>
 
-                        <!-- Floffy Clip -->
-                        <TabItem Header="Floffy Clip" Style="{StaticResource DarkTabItem}">
+                        <!-- Floofy Clip -->
+                        <TabItem Header="Floofy Clip" Style="{StaticResource DarkTabItem}">
                             <StackPanel>
                                 <CheckBox x:Name="FloffyClipEnabledCB" Style="{StaticResource DarkCheckBox}"
-                                          Content="Enable Floffy Clip"/>
+                                          Content="Enable Floofy Clip"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,14,0,0">
                                     <TextBlock Text="Keybind:" Style="{StaticResource InputLabel}" Width="70"/>
                                     <TextBlock x:Name="FloffyClipHotkeyDisplay" Style="{StaticResource HotkeyDisplay}" Width="150"/>
@@ -563,7 +563,7 @@
                                             Content="Reset" Click="FloffyClipResetBtn_Click"/>
                                 </StackPanel>
                                 <Button x:Name="FloffyClipSetBtn" Style="{StaticResource RoundButton}" Margin="0,10,0,0"
-                                        HorizontalAlignment="Left" Content="Click, then press key/button for Floffy Clip..."
+                                        HorizontalAlignment="Left" Content="Click, then press key/button for Floofy Clip..."
                                         Click="FloffyClipSetBtn_Click"/>
                                 <StackPanel Orientation="Horizontal" Margin="0,16,0,0">
                                     <TextBlock Text="Delay before freeze (ms):" Style="{StaticResource InputLabel}" Width="150"/>

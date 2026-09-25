@@ -257,7 +257,7 @@ namespace PrisonLifeMacro.Core
                 return true;
             }
 
-            // ---- Floffy Clip (consumed) ----
+            // ---- Floofy Clip (consumed) ----
             if (Settings.FloffyClipEnabled && !string.IsNullOrEmpty(Settings.FloffyClipKey) &&
                 vk == KeyNames.NameToVk(Settings.FloffyClipKey))
             {
@@ -566,7 +566,7 @@ namespace PrisonLifeMacro.Core
         }
 
         // ------------------------------------------------------------------
-        // Floffy Clip (floffy_freeze_macro.ahk parity: space down, c,
+        // Floofy Clip (floffy_freeze_macro.ahk parity: space down, c,
         // PreciseSleep(ClipDelay), suspend, PreciseSleep(300), resume, space up)
         // ------------------------------------------------------------------
         private const int FloffyClipFreezeHoldMs = 300;
