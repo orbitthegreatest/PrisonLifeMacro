@@ -207,7 +207,10 @@ namespace PrisonLifeMacro.Core
                 return true;
             }
 
-            // ---- Global suspend key: works from any window, blocks the key ----
+            if (!Native.IsProcessFocused(TargetProcess))
+                return false;                       // macros only work while Roblox is focused
+
+            // ---- Global suspend key: only while Roblox is focused, blocks the key ----
             if (!string.IsNullOrEmpty(Settings.GlobalSuspendKey))
             {
                 int svk = KeyNames.NameToVk(Settings.GlobalSuspendKey);
@@ -221,9 +224,6 @@ namespace PrisonLifeMacro.Core
 
             if (GlobalSuspended)
                 return false;                       // everything passes through
-
-            if (!Native.IsProcessFocused(TargetProcess))
-                return false;                       // macros only work while Roblox is focused
 
             // ---- Pressure Jump (consumed) ----
             if (Settings.PressureJumpEnabled && !string.IsNullOrEmpty(Settings.PressureJumpKey) &&

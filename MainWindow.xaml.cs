@@ -310,6 +310,13 @@ namespace PrisonLifeMacro
                 case "GSuspend": _stagedGSuspend = name; break;
             }
             RefreshDisplays();
+
+            if (target == "GSuspend" && string.Equals(name, "LButton", StringComparison.OrdinalIgnoreCase))
+            {
+                MessageBox.Show(this,
+                    "Left Click is set as the Suspend key.\n\nWhile Roblox is focused, every left click will be blocked and will toggle ALL macros on/off - you won't be able to shoot or click normally.\n\nUse a regular key instead unless this is intentional.",
+                    "Suspend Key = Left Click", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
         }
 
         private void RefreshDisplays()
@@ -558,6 +565,11 @@ namespace PrisonLifeMacro
             if (warnings.Length > 0)
                 MessageBox.Show(this, warnings + "\nThose macros won't trigger until you set a keybind on their tab.",
                     "No Keybind Set", MessageBoxButton.OK, MessageBoxImage.Warning);
+
+            if (string.Equals(Settings.GlobalSuspendKey, "LButton", StringComparison.OrdinalIgnoreCase))
+                MessageBox.Show(this,
+                    "The Suspend key is set to Left Click.\n\nWhile Roblox is focused, every left click will be blocked and will toggle ALL macros on/off - you won't be able to shoot or click normally.\n\nChange it to a regular key unless this is intentional.",
+                    "Suspend Key = Left Click", MessageBoxButton.OK, MessageBoxImage.Warning);
 
             FeedbackOverlay.Show("Settings saved");
         }

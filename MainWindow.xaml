@@ -491,9 +491,11 @@
                                         Content="Set Suspend Key" Margin="12,0,0,0" Click="GSuspendSetBtn_Click"/>
                             </Grid>
                             <TextBlock Margin="0,10,0,0" Style="{StaticResource HintText}"
-                                       Text="Press once to suspend ALL macros, press again to resume. Works from any window - even while sprinting."/>
+                                       Text="Press once to suspend ALL macros, press again to resume. Only works while Roblox is focused - like the other macros."/>
                             <TextBlock Margin="0,4,0,0" Style="{StaticResource HintText}"
                                        Text="Held sprint Shift and Freeze are released and gun-swap loops stop. Keys pass through to the game while suspended."/>
+                            <TextBlock Margin="0,6,0,0" Style="{StaticResource HintText}" Foreground="{StaticResource YellowBrush}"
+                                       Text="WARNING: Do not set Left Click as the Suspend key - left clicks in Roblox would be blocked and toggle all macros on/off."/>
                         </StackPanel>
                     </Border>
 
